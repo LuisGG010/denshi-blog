@@ -1,7 +1,15 @@
+import Link from 'next/link';
+
 export default function SobreMi(){
   return(
+    
     <div className="min-h-screen p-10 bg-gray-900 text-white">
-      <h1 className="texet-3xl font-bold text-green-400">
+      <div className="mb-6">
+        <Link href="/" className="text-gray-400 hover:text-white underline">
+          &larr; Volver al inicio
+        </Link>
+      </div>
+      <h1 className="text-3xl font-bold text-green-400">
         ¿Quien soy?
       </h1>
       <p className="mt-5 text-lg">
