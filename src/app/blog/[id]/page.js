@@ -33,17 +33,19 @@ export default async function PostPage({ params }) {
         &larr; Volver al muro
       </Link>
 
+      {/* --- TÍTULO GIGANTE (NUEVO) --- */}
+      {post.title && (
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-6 border-b border-gray-800 pb-4">
+          {post.title}
+        </h1>
+      )}
+      {/* ----------------------------- */}
+
       {/* EL POST */}
       <article className="bg-gray-900 border border-gray-800 rounded-xl p-8 shadow-lg mb-10">
         <p className="text-2xl text-white leading-relaxed whitespace-pre-wrap">{post.content}</p>
 
-        {/* --- TÍTULO GIGANTE (NUEVO) --- */}
-        {post.title && (
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-6 border-b border-gray-800 pb-4">
-            {post.title}
-          </h1>
-        )}
-        {/* ----------------------------- */}
+
 
         {/* --- BLOQUE DE IMAGEN (NUEVO) --- */}
         {post.image_url && (
