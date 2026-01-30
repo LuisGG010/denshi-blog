@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import NewPostForm from './NewPostForm';
 
 // No almacenar en caché para ver cambios al instante
 export const revalidate = 0; 
@@ -9,11 +10,9 @@ export default async function Home(){
   const { data: posts, error } = await supabase
     .from('posts')
     .select('*')
-    .order('create_at', { ascending: false });
+    .order('created_at', { ascending: false });
 
-if (error){
-  console.error('Error al obtener los posts:', error);
-}
+if (error) console.error("Error:", error);
 
   return (
     <div className='max-w-2xl mx-auto'>
@@ -22,13 +21,8 @@ if (error){
         <p className="text-gray-400">Lo que voy aprendiendo día a día.</p>
       </header>
 
-      <div className="mb-10 p-4 bg-gray-900 rounded-lg border border-gray-800">
-        <input
-          type="text"
-          placeholder="¿Qué estás pensando?"
-          className='w-full p-3 bg-black border-gray-700 rounded text-white focus:outline-none focus:border-blue-500'
-        />
-      </div>
+      <NewPostForm />
+      
       <div className='space-y-4'>
         {posts?.map((post) => (
         <article
