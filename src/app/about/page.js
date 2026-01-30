@@ -26,9 +26,9 @@ export default function AboutPage() {
             Hola, soy <span className="text-blue-500">Denshi</span> 👋
           </h1>
           <p className="text-gray-300 text-lg leading-relaxed mb-4">
-            Desarrollador en proceso, amante de la tecnología y explorador digital. 
-            Este blog es mi rincón personal para documentar mi viaje aprendiendo 
-            Next.js, Supabase y todo lo que rompo en el camino.
+            Soy un estudiante universitario de 23 años nacido el 24 de Octubre del 2002 en México. Curioso por naturaleza, me encanta explorar nuevas cosas y quiero compartir mis aprendizajes a través de este blog.
+            <br/>
+            Me encanta programación, el arte digital, la música y los videojuegos. Espero que al menos esto sea de tu agrado.
           </p>
           <div className="flex gap-4 justify-center md:justify-start">
             <Link href="/social" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold transition">
@@ -44,14 +44,14 @@ export default function AboutPage() {
       {/* --- SECCIÓN TECH STACK (HABILIDADES) --- */}
       <div className="mb-16">
         <h2 className="text-2xl font-bold text-white mb-6 border-l-4 border-purple-500 pl-4">
-          🛠️ Mi Arsenal Tecnológico
+          🛠️ Datos generales
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Tarjeta de Skill */}
-          <SkillCard icon="⚛️" name="React / Next.js" level="Aprendiendo" color="border-blue-500" />
-          <SkillCard icon="🔥" name="Supabase" level="Explorando" color="border-green-500" />
-          <SkillCard icon="🎨" name="Tailwind CSS" level="Me defiendo" color="border-cyan-500" />
-          <SkillCard icon="🐍" name="Python" level="Favorito" color="border-yellow-500" />
+          <SkillCard icon="🦊" name="Furry" level="Mediano" color="border-blue-500" />
+          <SkillCard icon="🔥" name="Calentón" level="Explorando" color="border-green-500" />
+          <SkillCard icon="🎨" name="Dibujante" level="Me defiendo" color="border-cyan-500" />
+          <SkillCard icon="🎮" name="Gamer" level="Favorito" color="border-yellow-500" />
         </div>
       </div>
 
