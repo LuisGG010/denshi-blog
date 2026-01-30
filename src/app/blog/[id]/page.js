@@ -4,6 +4,41 @@ import CommentForm from "@/app/CommentForm"; // Asegúrate de tener este compone
 
 export const revalidate = 0;
 
+// ESTA FUNCIÓN GENERA LOS DATOS PARA WHATSAPP/DISCORD
+export async function generateMetadata({ params }) {
+  const { id } = params;
+
+  // 1. Pedimos los datos del post a Supabase
+  const { data: post } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (!post) {
+    return {
+      title: 'Post no encontrado',
+    };
+  }
+
+  // 2. Devolvemos la configuración para redes sociales
+  return {
+    title: post.title, // El título que sale en azul
+    description: post.content?.slice(0, 100) + '...', // Un resumen pequeño
+    openGraph: {
+      title: post.title,
+      description: post.content?.slice(0, 100) + '...',
+      images: [
+        {
+          url: post.image_url || 'https://tu-web.com/imagen-por-defecto.png', // Tu foto o una default
+          width: 1200,
+          height: 630,
+        },
+      ],
+    },
+  };
+}
+
 export default async function PostPage({ params }) {
   // Esperamos a tener el ID de la URL
   const { id } = await params;

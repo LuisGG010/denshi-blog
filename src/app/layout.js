@@ -2,9 +2,20 @@ import './globals.css';
 import Sidebar from '@/components/Sidebar'; // Importamos tu nuevo componente
 
 export const metadata = {
-  title: 'Denshi Blog',
-  description: 'Blog personal de tecnología',
+  title: 'Denshi Blog - Código y Música', // Título de la pestaña
+  description: 'Un blog personal sobre desarrollo web, Next.js y aventuras digitales.', // Lo que sale abajo del título en Google
+  openGraph: {
+    title: 'Denshi Blog',
+    description: 'Un blog personal sobre desarrollo web, Next.js y aventuras digitales.',
+    type: 'website',
+    locale: 'es_ES',
+    url: 'https://denshi-blog.vercel.app', // Pon tu URL real de Vercel aquí
+    siteName: 'Denshi Blog',
+  },
 };
+
+export default function RootLayout({ children }) {
+  // ... resto del código
 
 export default function RootLayout({ children }) {
   return (
