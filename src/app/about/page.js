@@ -25,7 +25,7 @@ export default function AboutPage() {
           <h1 className="text-4xl font-bold text-white mb-4">
             Hola, soy <span className="text-blue-500">Denshi</span> 👋
           </h1>
-          <p className="text-gray-300 text-lg leading-relaxed mb-4 justify">
+          <p className="text-gray-300 text-lg leading-relaxed mb-4 text-justify">
             Soy un estudiante universitario de 23 años nacido el 24 de Octubre del 2002 en México. Curioso por naturaleza, me encanta explorar nuevas cosas y quiero compartir mis aprendizajes a través de este blog.
             <br/>
             Me encanta programación, el arte digital, la música y los videojuegos. Espero que al menos esto sea de tu agrado.
