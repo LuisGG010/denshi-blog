@@ -123,7 +123,7 @@ export default function Sidebar() {
         </div>
         <div className="flex justify-between text-sm text-gray-300 mb-2">
           <span>Vistas:</span>
-          <span className="text-green-400 font-mono">1.2k</span>
+          <span className="text-green-400 font-mono">---</span>
         </div>
         <div className="text-xs text-gray-600 mt-2 pt-2 border-t border-gray-800">
           Creado desde: 28-Ene-2026
