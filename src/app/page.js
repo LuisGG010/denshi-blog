@@ -1,69 +1,41 @@
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
-// Esto hace que la página no se guarde en caché y siempre muestre lo nuevo
-export const revalidate = 0;
-
-export default async function Home() {
-  // Pedimos los posts a Supabase
-  const { data: posts } = await supabase
-    .from('posts')
-    .select('*')
-    .order('created_at', { ascending: false });
-
+export default function HomePage() {
   return (
-    <div className='max-w-2xl mx-auto py-10 text-white'>
-      <header className='mb-12 text-center'>
-        <h1 className="text-4xl font-bold text-blue-500 mb-2">Diario de Denshi</h1>
-        <p className="text-gray-400">Mis actualizaciones y proyectos.</p>
-      </header>
+    <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
+      
+      <h1 className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 mb-6">
+        Bienvenido a Denshi Blog
+      </h1>
+      
+      <p className="text-xl text-gray-400 max-w-2xl mb-12">
+        El rincón digital donde el código, la música y las ideas convergen.
+        Explora las diferentes zonas de este espacio.
+      </p>
 
-      <div className='space-y-6'>
-        {posts?.map((post) => (
-          <article
-            key={post.id}
-            className='p-6 border border-gray-800 rounded-lg bg-gray-900 hover:border-blue-500 transition overflow-hidden'
-          >
-            
-            {/* --- TÍTULO (NUEVO) --- */}
-            {post.title && (
-              <h2 className="text-2xl font-bold text-white mb-4 hover:text-blue-400 transition">
-                <Link href={`/blog/${post.id}`}>
-                  {post.title}
-                </Link>
-              </h2>
-            )}
-            {/* ---------------------- */}
+      {/* Grid de Zonas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl px-4">
+        
+        <Link href="/blog" className="group bg-gray-900 p-8 rounded-2xl border border-gray-800 hover:border-blue-500 transition">
+          <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-400">📝 Zona de Posts</h2>
+          <p className="text-gray-500">Tutoriales, pensamientos y actualizaciones sobre mis proyectos.</p>
+        </Link>
 
-            {/* IMAGEN */}
-            {post.image_url && (
-              <div className="mb-4 flex justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={post.image_url} 
-                  alt="Imagen del post" 
-                  className="rounded-lg border border-gray-800 max-h-96 w-auto object-contain"
-                />
-              </div>
-            )}
+        <Link href="/sobre-mi" className="group bg-gray-900 p-8 rounded-2xl border border-gray-800 hover:border-green-500 transition">
+          <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-green-400">😎 Zona Personal</h2>
+          <p className="text-gray-500">Conoce quién está detrás del teclado y mi historia.</p>
+        </Link>
 
-            
-            <div className="flex justify-between items-center text-sm text-gray-500">
-                <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                
-                <Link 
-                    href={`/blog/${post.id}`}
-                    className="text-blue-400 hover:text-white font-semibold"
-                >
-                    Comentar / Ver detalle &rarr;
-                </Link>
-            </div>
-          </article>
-        ))}
+        <Link href="/social" className="group bg-gray-900 p-8 rounded-2xl border border-gray-800 hover:border-pink-500 transition">
+          <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-pink-400">🌐 Zona Social</h2>
+          <p className="text-gray-500">Mis redes y formas de contacto directo.</p>
+        </Link>
 
-        {posts?.length === 0 && (
-            <p className="text-center text-gray-500">No hay nada escrito aún.</p>
-        )}
+        <div className="bg-gray-900/50 p-8 rounded-2xl border border-gray-800 border-dashed">
+          <h2 className="text-2xl font-bold text-gray-600 mb-2">🚧 Zona en Construcción</h2>
+          <p className="text-gray-600">Próximamente más herramientas y recursos.</p>
+        </div>
+
       </div>
     </div>
   );

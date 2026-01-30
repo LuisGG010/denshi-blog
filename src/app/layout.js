@@ -1,34 +1,25 @@
-import { Inter } from "next/font/google";
-import "./globals.css";
-import Link from "next/link";
-
-const inter = Inter({ subsets: ["latin"] }); // Usa la fuente Inter de Google Fonts
-
+import './globals.css';
+import Sidebar from '@/components/Sidebar'; // Importamos tu nuevo componente
 
 export const metadata = {
-  title: "Denshi Blog",
-  description: "Mi blog personal creado con Next.js",
+  title: 'Denshi Blog',
+  description: 'Blog personal de tecnología',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
-      <body className={`${inter.className} bg-black text-white min-h-screen`}>
-        <nav className="p-6 border-b border-gray-800 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-blue-500">
-            DenshiBlog
-          </Link>
+      <body className="bg-black text-white min-h-screen flex">
+        
+        {/* 1. LA BARRA LATERAL (FIJA) */}
+        <Sidebar />
 
-          <div className="space-x-4">
-            <Link href="/sobre-mi" className="hover:text-blue-400 transition">
-              Sobre Mi
-            </Link>
-          </div>
-        </nav>
-      
-        <main className="p-10">
+        {/* 2. EL CONTENIDO PRINCIPAL (A LA DERECHA) */}
+        {/* ml-64 deja el margen izquierdo exacto del ancho del sidebar (16rem / 64 tailwind units) */}
+        <main className="ml-64 flex-1 p-8 w-full min-h-screen bg-black">
           {children}
         </main>
+
       </body>
     </html>
   );
