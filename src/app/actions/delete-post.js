@@ -1,35 +1,38 @@
 'use server'
 
-// Importamos desde el NUEVO archivo de servidor que creamos en el Paso 2
-import { createClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server"; // Asegúrate que esta ruta es correcta
 import { revalidatePath } from "next/cache";
 
 export async function deletePost(postId) {
-  const supabase = await createClient();
+  console.log("--> Intentando borrar post:", postId); // <--- DEBUG 1
 
-  // 1. Verificamos quién es el usuario
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
-  // Aquí usamos tu email de admin (ponlo en .env.local como ADMIN_EMAIL=tucorreo@...)
-  // O simplemente verifica que haya un usuario logueado:
+
   if (!user) {
+    console.log("--> ERROR: No hay usuario logueado"); // <--- DEBUG 2
     return { success: false, error: "No autorizado" };
   }
+  
+  // Opcional: Verificar email admin
+  // if (user.email !== process.env.ADMIN_EMAIL) {
+  //    console.log("--> ERROR: Email no es admin:", user.email);
+  //    return { success: false, error: "No eres admin" };
+  // }
 
-  // 2. Borramos el post
   const { error } = await supabase
     .from('posts')
     .delete()
     .eq('id', postId);
 
   if (error) {
-    console.error("Error al eliminar el post:", error);
-    return { success: false, error: error.message }; // Corregido el typo "sucess"
+    console.error("--> ERROR Supabase:", error.message); // <--- DEBUG 3
+    return { success: false, error: error.message };
   }
 
-  // 3. Actualizamos las páginas
-  revalidatePath('/panel-posts'); 
-  revalidatePath('/');            
-
+  console.log("--> ÉXITO: Post borrado"); // <--- DEBUG 4
+  
+  revalidatePath('/panel-posts');
+  revalidatePath('/');
   return { success: true };
 }

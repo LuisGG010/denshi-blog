@@ -47,10 +47,8 @@ export default async function AdminPage() {
               </div>
 
               {/* Botón de Eliminar */}
-              <form action={async () => {
-                'use server'
-                await deletePost(post.id)
-              }}>
+              {/* Botón de Eliminar */}
+              <form action={deletePost.bind(null, post.id)}>
                 <button 
                   type="submit"
                   className="bg-red-900/30 text-red-400 px-3 py-1 rounded text-sm hover:bg-red-600 hover:text-white transition border border-red-900/50"
