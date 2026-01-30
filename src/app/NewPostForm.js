@@ -1,55 +1,97 @@
-'use client' // Clave para componentes con estado
+'use client'
 
-import { use, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
-export default function NewPostForm(){
+export default function NewPostForm() {
+  const [title, setTitle] = useState(''); // <--- NUEVO
   const [content, setContent] = useState('');
-  const [enviando, setEnviando] = useState(false);
+  const [imageUrl, setImageUrl] = useState(''); 
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Evita que la pagina se recargue a lo antiguo
-    if (!content.trim()) return; // No enviar si el contenido está vacío
-
-    setEnviando(true);
+    e.preventDefault();
+    setLoading(true);
 
     const { error } = await supabase
-    .from('posts')
-    .insert([{ content: content }]);
+      .from('posts')
+      .insert({ 
+        title: title, // <--- GUARDAMOS EL TÍTULO
+        content: content, 
+        image_url: imageUrl || null
+      });
 
     if (error) {
-      console.error(error);
-      alert("Error al enviar");
+      alert("Error guardando el post");
     } else {
-      // 2. Si todo salió bien, limpiamos el campo
+      setTitle(''); // Limpiamos
       setContent('');
-      // 3. Recargamos la página suavemente para ver el mensaje nuevo
+      setImageUrl('');
       router.refresh();
     }
-
-    setEnviando(false);
+    setLoading(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className='mb-10 p-4 bg-gray-900 rounded-lg border border-gray-800'>
-      <input
-        type="text"
-        placeholder="¿Qué estás pensando?"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        disabled={enviando}
-        className='w-full p-3 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-blue-500 disabled:opacity-50'
+    <form onSubmit={handleSubmit} className='bg-gray-900 p-6 rounded-lg border border-gray-800 shadow-xl'>
+      
+      {/* INPUT DE TÍTULO (NUEVO) */}
+      <div className="mb-4">
+        <label className="block text-sm text-gray-400 mb-1 font-bold">Título:</label>
+        <input 
+          type="text" 
+          placeholder="Un título pegajoso..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full p-3 bg-black text-white border border-gray-700 rounded focus:border-blue-500 focus:outline-none text-lg font-bold"
+          required
         />
+      </div>
 
-        <button
-          type="submit"
-          disabled={enviando}
-          className='mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm font-bold'
-        >
-          {enviando ? 'Enviando...' : 'Publicar'}
-        </button>
+      <div className="mb-4">
+        <label className="block text-sm text-gray-400 mb-1">Contenido:</label>
+        <textarea
+          className='w-full p-3 bg-black text-white border border-gray-700 rounded focus:border-blue-500 focus:outline-none'
+          placeholder="¿Qué estás pensando hoy?"
+          rows={3}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          required
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm text-gray-400 mb-1">Link de imagen (Opcional):</label>
+        <input 
+          type="text" 
+          placeholder="https://..."
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          className="w-full p-2 bg-black text-blue-400 border border-gray-700 rounded text-sm focus:border-blue-500 focus:outline-none"
+        />
+      </div>
+
+      {imageUrl && (
+        <div className="mb-4 p-2 border border-gray-700 rounded bg-black flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={imageUrl} 
+            alt="Vista previa" 
+            className="max-h-40 rounded object-contain"
+            onError={(e) => e.target.style.display = 'none'} 
+          />
+        </div>
+      )}
+
+      <button 
+        type="submit" 
+        disabled={loading}
+        className='w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition disabled:opacity-50'
+      >
+        {loading ? 'Publicando...' : 'Publicar Post'}
+      </button>
     </form>
   );
 }
