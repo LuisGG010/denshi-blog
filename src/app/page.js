@@ -1,46 +1,46 @@
 import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
-import NewPostForm from './NewPostForm';
+import Link from 'next/link'; // <--- Importamos Link para los botones
 
-// No almacenar en caché para ver cambios al instante
-export const revalidate = 0; 
+export const revalidate = 0;
 
-export default async function Home(){
-  // Pedimos los datos en la nube
+export default async function Home() {
   const { data: posts, error } = await supabase
     .from('posts')
     .select('*')
     .order('created_at', { ascending: false });
 
-if (error) console.error("Error:", error);
+  if (error) console.error("Error cargando posts:", error);
 
   return (
-    <div className='max-w-2xl mx-auto'>
-      <header className='mb-8 text-center'>
-        <h1 className="text-3xl font-bold text-blue-500">Muro Social</h1>
-        <p className="text-gray-400">Lo que voy aprendiendo día a día.</p>
+    <div className='max-w-2xl mx-auto py-10'>
+      <header className='mb-12 text-center'>
+        <h1 className="text-4xl font-bold text-blue-500 mb-2">Diario de Denshi</h1>
+        <p className="text-gray-400">Mis actualizaciones y proyectos.</p>
       </header>
 
-      <NewPostForm />
-      
-      <div className='space-y-4'>
-        {posts?.map((post) => (
-        <article
-          key={post.id}
-          className='p-5 border border-gray-800 rounded-lg bg-gray-900/50 hover:border-blue-500/50 transition'
-          >
-            <p className='text-lg text-gray-200'>{post.content}</p>
-            <p className='text-gray-500 text-xs mt-3 black text-right'>
-              {new Date(post.created_at).toLocaleString()}
-            </p>
-          </article>
-          ))}
+      {/* YA NO HAY FORMULARIO AQUÍ. ES SOLO LECTURA. */}
 
-          {posts?.length === 0 && (
-            <p className='text-center text-gray-500 py-10'>
-              Nadie ah escrito nada aún...
-            </p>
-          )}
+      <div className='space-y-6'>
+        {posts?.map((post) => (
+          <article
+            key={post.id}
+            className='p-6 border border-gray-800 rounded-lg bg-gray-900 hover:border-blue-500 transition'
+          >
+            <p className='text-xl text-gray-200 mb-4'>{post.content}</p>
+            
+            <div className="flex justify-between items-center text-sm text-gray-500">
+                <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                
+                {/* Botón para ir a comentar */}
+                <Link 
+                    href={`/blog/${post.id}`}
+                    className="text-blue-400 hover:text-white font-semibold"
+                >
+                    Comentar / Ver detalle &rarr;
+                </Link>
+            </div>
+          </article>
+        ))}
       </div>
     </div>
   );
