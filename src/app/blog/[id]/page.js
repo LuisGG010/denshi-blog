@@ -29,7 +29,7 @@ export default async function PostPage({ params }) {
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-6 text-white">
-      <Link href="/" className="text-gray-500 hover:text-white mb-6 block transition">
+      <Link href="/blog" className="text-gray-500 hover:text-white mb-6 block transition">
         &larr; Volver al muro
       </Link>
 

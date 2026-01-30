@@ -24,3 +24,21 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); } 
+  /* Se mueve al -50% porque duplicaremos el texto. 
+     Cuando el texto 1 sale, el texto 2 ocupa su lugar exacto. */
+}
+
+.animate-marquee {
+  display: flex;
+  width: fit-content;
+  animation: marquee 10s linear infinite; /* 10 segundos tardará en dar la vuelta */
+}
+
+/* Opcional: Pausar si pasas el mouse por encima */
+.animate-marquee:hover {
+  animation-play-state: paused;
+}

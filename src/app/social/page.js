@@ -1,9 +1,12 @@
 export default function SocialPage() {
   const socials = [
-    { name: "GitHub", url: "https://github.com/tuusuario", icon: "🐙", color: "hover:text-purple-400" },
-    { name: "Twitter / X", url: "https://twitter.com/tuusuario", icon: "🐦", color: "hover:text-blue-400" },
-    { name: "Instagram", url: "https://instagram.com/tuusuario", icon: "📸", color: "hover:text-pink-500" },
-    { name: "LinkedIn", url: "https://linkedin.com/in/tuusuario", icon: "💼", color: "hover:text-blue-600" },
+    { name: "Youtube", url: "https://www.youtube.com/@luis_gg0102", icon: "🔴", color: "hover:text-red-600" },
+    { name: "Twitch", url: "https://www.twitch.tv/luis_gg010", icon: "🟣", color: "hover:text-purple-400" },
+    { name: "Kick", url: "https://kick.com/denshi010", icon: "🟢", color: "hover:text-purple-400" },
+    { name: "Discord", url: "https://discord.com/users/365965739984945165", icon: "🎮", color: "hover:text-blue-600" },
+    { name: "Twitter / X", url: "https://x.com/Luis_GG010", icon: "🐦", color: "hover:text-blue-400" },
+    { name: "Instagram", url: "https://www.instagram.com/luis_gg010/", icon: "📸", color: "hover:text-pink-500" },
+    { name: "GitHub", url: "https://github.com/LuisGG010", icon: "💻", color: "hover:text-purple-400" },
   ];
 
   return (

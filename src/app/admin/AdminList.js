@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+export const revalidate = 0;
+
 export default function AdminList({ posts }) {
   const router = useRouter();
 

@@ -8,21 +8,21 @@ export default function HomePage() {
         Bienvenido a Denshi Blog
       </h1>
       
-      <p className="text-xl text-gray-400 max-w-2xl mb-12">
-        El rincón digital donde el código, la música y las ideas convergen.
-        Explora las diferentes zonas de este espacio.
+      <p className="text-xl text-gray-400 mb-11">
+        Un rincón de internet donde publico tonterias, música y las ideas que me salen.<br/>
+        Sientete libre de explorar, pero sin mucho entusiasmo.
       </p>
 
       {/* Grid de Zonas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl px-4">
         
         <Link href="/blog" className="group bg-gray-900 p-8 rounded-2xl border border-gray-800 hover:border-blue-500 transition">
-          <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-400">📝 Zona de Posts</h2>
-          <p className="text-gray-500">Tutoriales, pensamientos y actualizaciones sobre mis proyectos.</p>
+          <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-400">📝 Diario de Posts</h2>
+          <p className="text-gray-500">Pensamientos de vida y actualizaciones sobre mis proyectos.</p>
         </Link>
 
-        <Link href="/sobre-mi" className="group bg-gray-900 p-8 rounded-2xl border border-gray-800 hover:border-green-500 transition">
-          <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-green-400">😎 Zona Personal</h2>
+        <Link href="/about" className="group bg-gray-900 p-8 rounded-2xl border border-gray-800 hover:border-green-500 transition">
+          <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-green-400">😎 Acerca de mi</h2>
           <p className="text-gray-500">Conoce quién está detrás del teclado y mi historia.</p>
         </Link>
 
