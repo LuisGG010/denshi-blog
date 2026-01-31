@@ -9,8 +9,8 @@ export default function EditPostPage({ params }) {
   const { id } = use(params); 
   const router = useRouter();
   
-  // --- ESTADOS (VARIABLES) ---
-  const [title, setTitle] = useState('');      // <--- ESTO FALTABA
+  // --- ESTADOS ---
+  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState(''); 
   const [comments, setComments] = useState([]);
@@ -27,7 +27,7 @@ export default function EditPostPage({ params }) {
         .single();
 
       if (postData) {
-        setTitle(postData.title || ''); // <--- Cargamos el título
+        setTitle(postData.title || '');
         setContent(postData.content);
         setImageUrl(postData.image_url || ''); 
       }
@@ -49,13 +49,13 @@ export default function EditPostPage({ params }) {
     fetchData();
   }, [id]);
 
-  // 2. ACTUALIZAR POST
+  // 2. GUARDAR CAMBIOS DEL POST
   const handleUpdate = async (e) => {
     e.preventDefault();
     const { error } = await supabase
       .from('posts')
       .update({ 
-        title: title,       // <--- Guardamos el título
+        title: title,
         content: content, 
         image_url: imageUrl || null 
       })
@@ -84,22 +84,22 @@ export default function EditPostPage({ params }) {
     <div className='min-h-screen p-10 flex flex-col items-center bg-black text-white'>
       <h1 className='text-2xl font-bold text-blue-500 mb-6'>Editar Post & Moderar</h1>
 
-      {/* --- FORMULARIO DE EDICIÓN --- */}
+      {/* --- FORMULARIO DE EDICIÓN DEL POST --- */}
       <form onSubmit={handleUpdate} className='w-full max-w-md flex flex-col gap-4 mb-12 border-b border-gray-800 pb-10'>
         
-        {/* VISTA PREVIA IMAGEN POST */}
+        {/* PREVIEW IMAGEN */}
         {imageUrl && (
             <div className="flex justify-center p-2 border border-gray-800 rounded bg-gray-900/30 mb-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                     src={imageUrl} 
-                    alt="Preview Post" 
+                    alt="Preview" 
                     className="max-h-48 rounded object-contain"
                 />
             </div>
         )}
 
-        {/* CAMPO TÍTULO (NUEVO) */}
+        {/* TÍTULO */}
         <div>
             <label className='text-gray-400 text-sm font-bold block mb-2'>Título:</label>
             <input
@@ -110,7 +110,7 @@ export default function EditPostPage({ params }) {
             />
         </div>
 
-        {/* CAMPO DE LINK IMAGEN */}
+        {/* LINK IMAGEN */}
         <div>
             <label className='text-gray-400 text-sm font-bold block mb-2'>Link de Imagen:</label>
             <input 
@@ -121,7 +121,7 @@ export default function EditPostPage({ params }) {
             />
         </div>
 
-        {/* CAMPO DE TEXTO */}
+        {/* CONTENIDO */}
         <div>
             <label className='text-gray-400 text-sm font-bold block mb-2'>Contenido:</label>
             <textarea
@@ -141,7 +141,7 @@ export default function EditPostPage({ params }) {
         </div>
       </form>
 
-      {/* --- ZONA DE MODERACIÓN --- */}
+      {/* --- ZONA DE MODERACIÓN (AQUÍ ESTÁ EL CAMBIO) --- */}
       <div className='w-full max-w-md'>
         <h3 className='text-xl text-red-400 font-bold mb-4'>
           Moderar Comentarios ({comments.length})
@@ -151,7 +151,7 @@ export default function EditPostPage({ params }) {
           {comments.map((comment) => (
             <div key={comment.id} className='bg-gray-900/50 p-3 rounded border border-gray-800 flex gap-4 items-start group'>
               
-              {/* FOTO DEL COMENTARIO */}
+              {/* FOTO DEL USUARIO (Si puso imagen en el comentario) */}
               {comment.image_url && (
                  <div className="shrink-0">
                     <a href={comment.image_url} target="_blank" rel="noopener noreferrer">
@@ -159,29 +159,37 @@ export default function EditPostPage({ params }) {
                         <img 
                             src={comment.image_url} 
                             alt="Img Comentario" 
-                            className="w-16 h-16 rounded object-cover border border-gray-700 hover:opacity-75"
+                            className="w-12 h-12 rounded object-cover border border-gray-700 hover:opacity-75"
                         />
                     </a>
                  </div>
               )}
 
-              {/* TEXTO + BOTÓN BORRAR */}
+              {/* DATOS DEL COMENTARIO */}
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start">
-                    <p className='text-gray-300 text-sm break-words whitespace-pre-wrap pr-2'>
-                        {comment.content}
-                    </p>
+                    
+                    <div className="pr-2">
+                        {/* --- AQUÍ MOSTRAMOS EL AUTOR EN AZUL --- */}
+                        <span className="text-blue-400 font-bold text-xs block mb-1">
+                            {comment.author || 'Anónimo'}
+                        </span>
+                        
+                        <p className='text-gray-300 text-sm break-words whitespace-pre-wrap line-clamp-4'>
+                            {comment.content}
+                        </p>
+                    </div>
                     
                     <button
                         onClick={() => handleDeleteComment(comment.id)}
-                        className='text-red-500 hover:text-red-300 font-bold px-2'
-                        title="Eliminar"
+                        className='text-red-500 hover:text-red-300 font-bold px-2 py-1 hover:bg-red-900/20 rounded transition'
+                        title="Eliminar Definitivamente"
                     >
                         🗑️
                     </button>
                 </div>
-                <span className='text-xs text-gray-500 block mt-1'>
-                    {new Date(comment.created_at).toLocaleDateString()}
+                <span className='text-[10px] text-gray-500 block mt-2 border-t border-gray-800 pt-1'>
+                    {new Date(comment.created_at).toLocaleString()}
                 </span>
               </div>
 
@@ -189,7 +197,9 @@ export default function EditPostPage({ params }) {
           ))}
 
           {comments.length === 0 && (
-            <p className='text-gray-500 text-center italic'>Sin comentarios.</p>
+            <p className='text-gray-500 text-center italic py-4 border border-dashed border-gray-800 rounded'>
+                No hay comentarios para moderar.
+            </p>
           )}
         </div>
       </div>

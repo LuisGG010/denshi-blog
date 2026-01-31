@@ -6,76 +6,82 @@ import { useRouter } from 'next/navigation';
 
 export default function CommentForm({ postId }) {
   const [content, setContent] = useState('');
-  const [imageUrl, setImageUrl] = useState(''); // <--- NUEVO: Estado para la imagen del comentario
+  const [author, setAuthor] = useState(''); // <--- NUEVO ESTADO PARA EL NOMBRE
+  const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!content.trim()) return;
     
-    if (!content.trim() && !imageUrl.trim()) return; // No enviar si está todo vacío
-
     setLoading(true);
 
     const { error } = await supabase
       .from('comments')
-      .insert({ 
+      .insert({
         post_id: postId,
         content: content,
-        image_url: imageUrl || null // <--- GUARDAMOS EL LINK AQUÍ
+        author: author || 'Anónimo', // <--- ENVIAMOS EL NOMBRE
+        image_url: imageUrl || null
       });
 
     if (error) {
-      alert("Error al comentar: " + error.message);
+      alert("Error enviando comentario");
     } else {
       setContent('');
-      setImageUrl(''); // Limpiamos el campo
-      router.refresh();
+      setAuthor(''); // Limpiamos nombre
+      setImageUrl('');
+      router.refresh(); // Recargamos la página para ver el comentario nuevo
     }
     setLoading(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       
-      {/* ÁREA DE TEXTO */}
-      <textarea
-        className='w-full p-3 bg-black text-white border border-gray-700 rounded mb-2 focus:border-blue-500 focus:outline-none'
-        placeholder="Escribe tu opinión..."
-        rows={2}
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-      />
+      {/* INPUT PARA EL NOMBRE */}
+      <div>
+        <label className="block text-gray-400 text-xs font-bold mb-1 ml-1">Tu Nombre</label>
+        <input
+            type="text"
+            placeholder="Anónimo"
+            value={author}
+            onChange={(e) => setAuthor(e.target.value)}
+            className="w-full p-3 bg-black text-white border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
+            maxLength={25}
+        />
+      </div>
 
-      {/* INPUT PARA LINK DE IMAGEN (NUEVO) */}
+      {/* INPUT PARA EL COMENTARIO */}
+      <div>
+        <label className="block text-gray-400 text-xs font-bold mb-1 ml-1">Comentario</label>
+        <textarea
+            placeholder="¿Qué opinas?"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full p-3 bg-black text-white border border-gray-700 rounded focus:border-blue-500 focus:outline-none h-24"
+            required
+        />
+      </div>
+
+      {/* INPUT PARA IMAGEN (Opcional) */}
       <input 
         type="text" 
-        placeholder="https://... (Link de imagen opcional)"
+        placeholder="Link de imagen (https://...)"
         value={imageUrl}
         onChange={(e) => setImageUrl(e.target.value)}
-        className="w-full p-2 mb-2 bg-black text-blue-400 border border-gray-700 rounded text-sm focus:border-blue-500 focus:outline-none"
+        className="w-full p-2 bg-black text-gray-400 text-sm border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
       />
-
-      {/* PREVISUALIZACIÓN (NUEVO) */}
-      {imageUrl && (
-        <div className="mb-2 p-2 border border-gray-700 rounded bg-black flex justify-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src={imageUrl} 
-            alt="Vista previa comentario" 
-            className="max-h-32 rounded object-contain"
-            onError={(e) => e.target.style.display = 'none'}
-          />
-        </div>
-      )}
 
       <button 
         type="submit" 
-        disabled={loading || (!content && !imageUrl)}
-        className='bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition disabled:opacity-50 text-sm'
+        disabled={loading}
+        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition disabled:opacity-50 mt-2"
       >
-        {loading ? 'Enviando...' : 'Comentar'}
+        {loading ? 'Enviando...' : 'Enviar Comentario 🚀'}
       </button>
+
     </form>
   );
 }

@@ -1,14 +1,13 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import CommentForm from "@/app/CommentForm"; // Asegúrate de tener este componente
+import CommentForm from "@/app/CommentForm"; 
 
 export const revalidate = 0;
 
-// ESTA FUNCIÓN GENERA LOS DATOS PARA WHATSAPP/DISCORD
 export async function generateMetadata({ params }) {
-  const { id } = params;
+  // 1. AHORA ESPERAMOS A PARAMS (Igual que abajo)
+  const { id } = await params; 
 
-  // 1. Pedimos los datos del post a Supabase
   const { data: post } = await supabase
     .from('posts')
     .select('*')
@@ -21,16 +20,15 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  // 2. Devolvemos la configuración para redes sociales
   return {
-    title: post.title, // El título que sale en azul
-    description: post.content?.slice(0, 100) + '...', // Un resumen pequeño
+    title: post.title,
+    description: post.content?.slice(0, 100) + '...',
     openGraph: {
       title: post.title,
       description: post.content?.slice(0, 100) + '...',
       images: [
         {
-          url: post.image_url || 'https://tu-web.com/imagen-por-defecto.png', // Tu foto o una default
+          url: post.image_url || 'https://tu-web.com/imagen-por-defecto.png',
           width: 1200,
           height: 630,
         },
@@ -40,27 +38,19 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function PostPage({ params }) {
-  // Esperamos a tener el ID de la URL
   const { id } = await params;
 
   // 1. Pedimos el POST
-  const { data: post } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data: post } = await supabase.from('posts').select('*').eq('id', id).single();
 
-  // 2. Pedimos los COMENTARIOS de este post
+  // 2. Pedimos los COMENTARIOS (Aquí ya viene el campo 'author' de la base de datos)
   const { data: comments } = await supabase
     .from('comments')
     .select('*')
     .eq('post_id', id)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true }); // Comentarios viejos arriba, nuevos abajo
 
-  // Si no existe el post, mostramos error
-  if (!post) {
-    return <div className="text-white text-center mt-20">Post no encontrado</div>;
-  }
+  if (!post) return <div className="text-white text-center mt-20">Post no encontrado</div>;
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-6 text-white">
@@ -68,39 +58,31 @@ export default async function PostPage({ params }) {
         &larr; Volver al muro
       </Link>
 
-      {/* --- TÍTULO GIGANTE (NUEVO) --- */}
-      {post.title && (
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-6 border-b border-gray-800 pb-4">
+      {/* --- EL POST --- */}
+      <h1 className="text-3xl md:text-4xl font-bold text-white mb-6 border-b border-gray-800 pb-4">
           {post.title}
-        </h1>
-      )}
-      {/* ----------------------------- */}
+      </h1>
 
-      {/* EL POST */}
       <article className="bg-gray-900 border border-gray-800 rounded-xl p-8 shadow-lg mb-10">
-        <p className="text-2xl text-white leading-relaxed whitespace-pre-wrap">{post.content}</p>
+        <p className="text-xl text-white leading-relaxed whitespace-pre-wrap mb-6">{post.content}</p>
 
-
-
-        {/* --- BLOQUE DE IMAGEN (NUEVO) --- */}
         {post.image_url && (
-          <div className="mb-6 rounded-lg overflow-hidden  border-gray-800 flex justify-center">
+          <div className="mb-6 rounded-lg overflow-hidden flex justify-center bg-black/50">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={post.image_url} 
               alt="Imagen del post" 
-              className="w-auto max-h-[500px] object-contain" // Le puse un poco más de altura (500px) para que luzca
+              className="w-auto max-h-[500px] object-contain"
             />
           </div>
         )}
-        {/* -------------------------------- */}
 
         <div className="mt-4 text-gray-500 text-sm">
-            {new Date(post.created_at).toLocaleString()}
+            Publicado el: {new Date(post.created_at).toLocaleString()}
         </div>
       </article>
 
-      {/* LOS COMENTARIOS */}
+      {/* --- LOS COMENTARIOS --- */}
       <div className="border-t border-gray-800 pt-10">
         <h3 className="text-2xl font-bold text-blue-500 mb-6">
             Comentarios ({comments?.length || 0})
@@ -110,55 +92,57 @@ export default async function PostPage({ params }) {
         {comments?.map((comment) => (
           <div key={comment.id} className="bg-black p-4 rounded-lg border border-gray-800">
             
-            {/* --- NUEVO CONTENEDOR FLEX (Lado a Lado) --- */}
             <div className="flex gap-4 items-start">
 
-              {/* 1. IMAGEN A LA IZQUIERDA (Tamaño limitado) */}
-              {comment.image_url && (
-                // 'shrink-0' es vital: impide que el texto aplaste la imagen si es muy largo.
+              {/* FOTO (Si hay) */}
+              {comment.image_url ? (
                 <div className="shrink-0">
                   <a href={comment.image_url} target="_blank" rel="noopener noreferrer">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                       src={comment.image_url}
-                      alt="Imagen en comentario"
-                      // CLASES CLAVE:
-                      // w-24 h-24 sm:w-32 sm:h-32 -> Define un tamaño cuadrado fijo (96px en móvil, 128px en PC).
-                      // object-cover -> "Recorta" la imagen para llenar el cuadrado sin deformarla.
-                      // Si prefieres que se vea entera aunque queden bordes negros, usa 'object-contain'.
-                      className="rounded border border-gray-800 w-24 h-24 sm:w-32 sm:h-32 object-cover hover:opacity-80 transition"
+                      alt="Adjunto"
+                      className="rounded border border-gray-800 w-16 h-16 sm:w-20 sm:h-20 object-cover hover:opacity-80 transition"
                       />
                   </a>
                 </div>
+              ) : (
+                /* SI NO HAY FOTO, PONEMOS UN CIRCULO CON LA INICIAL DEL NOMBRE */
+                <div className="shrink-0 w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-800 text-blue-300 font-bold">
+                    {(comment.author || 'A')[0].toUpperCase()}
+                </div>
               )}
 
-              {/* 2. TEXTO A LA DERECHA (Ocupa el resto) */}
+              {/* TEXTO */}
               <div className="flex-1 min-w-0">
-                {/* Agregué 'break-words' por si alguien pega un link gigante sin espacios, para que no rompa el diseño */}
-                <p className="text-gray-300 mb-2 whitespace-pre-wrap break-words">
+                
+                {/* --- AQUÍ MOSTRAMOS EL NOMBRE DEL AUTOR --- */}
+                <div className="flex justify-between items-baseline mb-1">
+                    <span className="font-bold text-blue-400 text-sm md:text-base">
+                        {comment.author || 'Anónimo'}
+                    </span>
+                    <span className="text-[10px] text-gray-600">
+                        {new Date(comment.created_at).toLocaleDateString()}
+                    </span>
+                </div>
+                {/* ------------------------------------------ */}
+
+                <p className="text-gray-300 text-sm whitespace-pre-wrap break-words">
                   {comment.content}
                 </p>
                 
-                <span className="text-xs text-gray-600 block text-right mt-2">
-                  {new Date(comment.created_at).toLocaleString()}
-                </span>
               </div>
-
             </div>
-            {/* ------------------------------------------- */}
-
           </div>
         ))}
 
         {comments?.length === 0 && (
-          <p className="text-gray-600 italic">Nadie ha comentado aún.</p>
+          <p className="text-gray-600 italic">Sé el primero en comentar.</p>
         )}
-      </div>
+        </div>
 
-        {/* EL FORMULARIO PARA COMENTAR */}
+        {/* EL FORMULARIO */}
         <div className="bg-gray-900 p-6 rounded-lg border border-gray-800">
-          <h4 className="text-white font-bold mb-4">Deja tu comentario:</h4>
-          {/* Le pasamos el ID del post al formulario para que sepa dónde guardar */}
           <CommentForm postId={id} />
         </div>
       </div>
