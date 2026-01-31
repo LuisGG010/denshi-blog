@@ -9,9 +9,18 @@ import { usePathname } from 'next/navigation';
 
 // LISTA DE CANCIONES (Tus links de Discord)
 const PLAYLIST = [
-  { title: "Castle Funk (DELTARUNE Chapter 3+4 Soundtrack) - Toby Fox", url: "https://cdn.discordapp.com/attachments/1466767907722625211/1466767976840564888/43._Castle_Funk_DELTARUNE_Chapter_34_Soundtrack_-_Toby_Fox.mp3?ex=697df1a0&is=697ca020&hm=ff14a76a0ad8b24dee211daec780f0cb248e463a36b295896d61875e06c3c722&" },
-  { title: "My Castle Town (DELTARUNE Chapter 2 Soundtrack) - Toby Fox", url: "https://cdn.discordapp.com/attachments/1466767907722625211/1466771705614827530/3._My_Castle_Town_DELTARUNE_Chapter_2_Soundtrack_-_Toby_Fox.mp3?ex=697df519&is=697ca399&hm=cfb2aa91325b9d93fd4e70d4dc5ef3773b26d3719f2234bfc774c07ae33aa6ba&" },
-  { title: "Neon Mixtape Tour - Choose Your Seeds (PvZ2)", url: "https://cdn.discordapp.com/attachments/1466767907722625211/1466772362161688608/Plants_Vs_Zombies_2_Music_Neon_Mixtape_Tour_Choose_Your_Seeds_Extended_HD.mp3?ex=697df5b6&is=697ca436&hm=df29d7e3778009f5a68fa3222a55fef27c54102c8eae8d5bb474f181fde3244d&" }
+  { 
+    title: "Castle Funk - Deltarune Ch.3", 
+    url: "/music/castle-funk.mp3" 
+  },
+  { 
+    title: "My Castle Town - Deltarune Ch.2", 
+    url: "/music/my-castle-town.mp3" 
+  },
+  { 
+    title: "Neon Mixtape Tour - PvZ2", 
+    url: "/music/neon-mixtape.mp3" 
+  }
 ];
 
 // Función auxiliar para formatear tiempo
@@ -213,13 +222,18 @@ export default function Sidebar() {
         </div>
 
         {/* ELEMENTO AUDIO (CORREGIDO) */}
+        {/* ELEMENTO AUDIO (MODIFICADO PARA INTROSCREEN) */}
         <audio 
+            id="bg-music"  // <--- 1. IMPORTANTE: Agrega este ID
             ref={audioRef} 
             src={PLAYLIST[currentSongIndex]?.url}
-            loop={isLooping} // <--- AQUÍ ESTÁ LA MAGIA QUE FALTABA
+            loop={isLooping} 
+            
+            // 2. AGREGAR ESTO: Para que si la IntroScreen le da play, 
+            // el botón cambie a "Pausa" automáticamente.
+            onPlay={() => setIsPlaying(true)} 
+            
             onEnded={() => {
-                // Si NO está en bucle, pasa a la siguiente.
-                // Si SÍ está en bucle, el navegador la repite solo gracias a loop={true}
                 if (!isLooping) changeSong(true);
             }} 
             onTimeUpdate={onTimeUpdate}
