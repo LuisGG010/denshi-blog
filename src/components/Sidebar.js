@@ -1,9 +1,11 @@
 'use client'
 
-import Link from 'next/link';
+import TransitionLink from './TransitionLink'; // <--- IMPORTAR
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { usePathname } from 'next/navigation';
+
+
 
 // LISTA DE CANCIONES (Tus links de Discord)
 const PLAYLIST = [
@@ -27,6 +29,7 @@ export default function Sidebar() {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(false); // Estado del bucle
+  const [totalViews, setTotalViews] = useState(0); // <--- ESTADO NUEVO
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [volume, setVolume] = useState(0.5);
   
@@ -41,6 +44,16 @@ export default function Sidebar() {
         .from('posts')
         .select('*', { count: 'exact', head: true });
       setPostCount(count || 0);
+
+      const { data } = await supabase
+        .from('site_stats')
+        .select('total_views')
+        .eq('id', 1)
+        .single();
+    
+      if (data) {
+        setTotalViews(data.total_views);
+      }
     };
     fetchStats();
   }, []);
@@ -106,11 +119,11 @@ export default function Sidebar() {
       <div className="p-6">
         <h1 className="text-2xl font-bold text-blue-500 mb-8 tracking-wider">DENSHI BLOG</h1>
         <nav>
-          <Link href="/" className={linkClass('/')}>🏠 Inicio</Link>
-          <Link href="/blog" className={linkClass('/blog')}>📝 Blog & Posts</Link>
-          <Link href="/social" className={linkClass('/social')}>🌐 Redes Sociales</Link>
-          <Link href="/about" className={linkClass('/about')}>😎 Sobre Mí</Link>
-          <Link href="/admin" className={linkClass('/admin')}>🔒 Admin</Link>
+          <TransitionLink href="/" className={linkClass('/')}>🏠 Inicio</TransitionLink>
+          <TransitionLink href="/blog" className={linkClass('/blog')}>📝 Blog & Posts</TransitionLink>
+          <TransitionLink href="/social" className={linkClass('/social')}>🌐 Redes Sociales</TransitionLink>
+          <TransitionLink href="/about" className={linkClass('/about')}>😎 Sobre Mí</TransitionLink>
+          <TransitionLink href="/admin" className={linkClass('/admin')}>🔒 Admin</TransitionLink>
         </nav>
       </div>
 
@@ -119,11 +132,11 @@ export default function Sidebar() {
         <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">Estadísticas</h3>
         <div className="flex justify-between text-sm text-gray-300 mb-2">
           <span>Posts Totales:</span>
-          <span className="text-blue-400 font-mono">{postCount}</span>
+          <span className="text-blue-400 font-mono font-bold animate-pulse">{postCount}</span>
         </div>
         <div className="flex justify-between text-sm text-gray-300 mb-2">
           <span>Vistas:</span>
-          <span className="text-green-400 font-mono">---</span>
+          <span className="text-green-400 font-mono font-bold animate-pulse">{totalViews}</span>
         </div>
         <div className="text-xs text-gray-600 mt-2 pt-2 border-t border-gray-800">
           Creado desde: 28-Ene-2026

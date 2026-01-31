@@ -1,6 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import CommentForm from "@/app/CommentForm"; 
+import CommentForm from "@/app/CommentForm"; // ... tus otros imports ...
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export const revalidate = 0;
 
@@ -64,10 +67,35 @@ export default async function PostPage({ params }) {
       </h1>
 
       <article className="bg-gray-900 border border-gray-800 rounded-xl p-8 shadow-lg mb-10">
-        <p className="text-xl text-white leading-relaxed whitespace-pre-wrap mb-6">{post.content}</p>
+        {/* AHORA ES ASÍ (MARKDOWN INTELIGENTE): */}
+        <div className="text-xl text-white leading-relaxed markdown-content">
+          <ReactMarkdown
+            components={{
+              code({node, inline, className, children, ...props}) {
+                const match = /language-(\w+)/.exec(className || '')
+                return !inline && match ? (
+                  <SyntaxHighlighter
+                    style={dracula} // Estilo oscuro tipo hacker
+                    language={match[1]}
+                    PreTag="div"
+                    {...props}
+                  >
+                    {String(children).replace(/\n$/, '')}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code className={`${className} bg-gray-800 rounded px-1`} {...props}>
+                    {children}
+                  </code>
+                )
+              }
+            }}
+          >
+            {post.content}
+          </ReactMarkdown>
+        </div>
 
         {post.image_url && (
-          <div className="mb-6 rounded-lg overflow-hidden flex justify-center bg-black/50">
+          <div className="mb-6 rounded-lg overflow-hidden flex justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={post.image_url} 
@@ -78,7 +106,13 @@ export default async function PostPage({ params }) {
         )}
 
         <div className="mt-4 text-gray-500 text-sm">
-            Publicado el: {new Date(post.created_at).toLocaleString()}
+            Publicado el: {new Date(post.created_at).toLocaleString('es-ES', { 
+              day: '2-digit', 
+              month: '2-digit', 
+              year: '2-digit', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })}
         </div>
       </article>
 
@@ -122,7 +156,13 @@ export default async function PostPage({ params }) {
                         {comment.author || 'Anónimo'}
                     </span>
                     <span className="text-[10px] text-gray-600">
-                        {new Date(comment.created_at).toLocaleDateString()}
+                        {new Date(comment.created_at).toLocaleString('es-ES', { 
+                          day: '2-digit', 
+                          month: '2-digit', 
+                          year: '2-digit', 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
                     </span>
                 </div>
                 {/* ------------------------------------------ */}
