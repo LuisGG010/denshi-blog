@@ -151,10 +151,6 @@ export default function Sidebar() {
 
         {/* BARRA DE PROGRESO */}
         <div className="mb-2">
-            <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
-            </div>
             <input 
                 type="range" 
                 min="0" 
@@ -164,6 +160,10 @@ export default function Sidebar() {
                 className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-white"
                 disabled={!Number.isFinite(duration) || duration === 0}
             />
+            <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+            </div>
         </div>
 
         {/* CONTROLES */}
@@ -195,7 +195,7 @@ export default function Sidebar() {
             <input 
                 type="range" min="0" max="1" step="0.1" 
                 value={volume} onChange={handleVolume}
-                className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
             />
         </div>
 

@@ -48,10 +48,10 @@ export default function AboutPage() {
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Tarjeta de Skill */}
-          <SkillCard icon="🦊" name="Furry" level="Mediano" color="border-blue-500" />
-          <SkillCard icon="🔥" name="Calentón" level="Explorando" color="border-green-500" />
-          <SkillCard icon="🎨" name="Dibujante" level="Me defiendo" color="border-cyan-500" />
           <SkillCard icon="🎮" name="Gamer" level="Favorito" color="border-yellow-500" />
+          <SkillCard icon="🦊" name="Furry/Brony" level="Mediano" color="border-blue-500" />
+          <SkillCard icon="🖌️" name="Dibujante" level="Me defiendo" color="border-cyan-500" />
+          <SkillCard icon="🔥" name="Calentón" level="Explorando" color="border-green-500" />
         </div>
       </div>
 
@@ -65,11 +65,101 @@ export default function AboutPage() {
             title="Creando Denshi Blog" 
             desc="Decidí construir mi propia plataforma desde cero para no depender de nadie." 
           />
-          
+
           <TimelineItem 
             date="2025" 
-            title="Descubriendo el Código" 
-            desc="Mis primeros pasos con Python y scripts básicos. El inicio de todo." 
+            title="Full directo a la comunidad Furry"
+            desc="Fue el año donde me adentré de lleno a la comunidad furry, conociendo a mucha gente, varios amigos, varios conocidos y varios haters, donde 100% me libere mi bisexualidad a mi familia y a mi mismo." 
+          />
+
+          <TimelineItem 
+            date="2024" 
+            title="Un año algo interesante"
+            desc="Aunque hace poco que ocurrio, este año lo sentí demasiado rapido, entre amigos y proyectos, no hubo mucho que destacar, supongo que no tenía nada en mente." 
+          />
+          
+          <TimelineItem 
+            date="2023" 
+            title="Entrando a la comunidad de los Furries"
+            desc="Ya que ambos estaban entrelazados, aunque ellos no lo aceptan, me metí de lleno a la comunidad furry y brony, conociendo gente increíble y tuve al final que desarrollar mi bisexualidad." 
+          />
+
+          <TimelineItem 
+            date="2022" 
+            title="Conviriendome en Brony"
+            desc="Por medio de un streamer me interese en MLP y su historia puede ser muy profunda a veces, en resumen, me encanto mucho la serie." 
+          />
+
+          <TimelineItem 
+            date="2020 parte 2" 
+            title="Lo mismo pero 2"
+            desc="Entre de lleno a internet, tanto como comunidades de videojuegos y streams míos en Twitch, planteandome la idea de crear contenido en Youtube." 
+          />
+
+          <TimelineItem 
+            date="2020" 
+            title="Mi salida de la prepa" 
+            desc="Lastimosamente me toco vivirla en pandemia, pero aun así logré graduarme y seguir adelante con mis cosas, reprobando un examen de la UNI y llendo a otra." 
+          />
+
+          <TimelineItem 
+            date="2019" 
+            title="Estudio de idiomas" 
+            desc="En este año me metí a estudiar inglés y japonés, aprendiendo lo básico de ambos idiomas, me encanto la gramatica y todo, me la pasaba mirando streams de Vtubers." 
+          />
+
+          <TimelineItem 
+            date="2018" 
+            title="De todo a nada" 
+            desc="Y despues del mejor año pasamos al peor año, tan aburrido, aparte de la muerte de MC por Fornite, no hubo nada interesante, al menos en los memes no estaban malos." 
+          />
+
+          <TimelineItem 
+            date="2017" 
+            title="Mejor año de mi vida" 
+            desc="Pasaron tantas cosas, primera interaccion en Discord, Juegos que me encantaron, Steam y más." 
+          />
+
+          <TimelineItem 
+            date="2016" 
+            title="Desarrollo completo de etapa Otaku" 
+            desc="Fue donde más me adentré en el mundo del anime, y la cultura japonesa en general, viendo clasicos como Suzumiya Haruhi no Yūutsu, Attack on Titan y K-On!." 
+          />
+
+          <TimelineItem 
+            date="2015" 
+            title="Primera laptop propia" 
+            desc="El gobierno nos regaló una laptop para mí, donde pude jugar varias cosas, tales como, Minecraft con mods, juegos de navegador como Friv y Nitrome - 'Nitrome Must Die'."
+          />
+
+          <TimelineItem 
+            date="2014" 
+            title="Primera vez en Minecraft en una tablet" 
+            desc="La primera interacción en Minecraft y el conocimiento de Vegetta777 y TheWillyrex entre otros youtubers de la época." 
+          />
+          
+          <TimelineItem 
+            date="2013" 
+            title="Más contacto con el internet" 
+            desc="Cuenta antiguas de Facebook, YouTube y juegos MMO como Metin2, San Andreas, burnout, Left 4 dead y CoD." 
+          />
+          
+          <TimelineItem 
+            date="2011" 
+            title="Primeros videojuegos" 
+            desc="Juegos arcade tipo KOF, Snow Bros y Metal Slug en un ciber cercano a casa." 
+          />
+
+          <TimelineItem 
+            date="2008" 
+            title="Primeras interacciones con videojuegos" 
+            desc="Juegos basicos Como la serpiente en un Nokia 1100, Furbolito y Tetris." 
+          />
+          
+          <TimelineItem 
+            date="2002" 
+            title="Nací - duh" 
+            desc="Muerto viviente sin capacidad de razonar." 
           />
           
         </div>
