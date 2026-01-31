@@ -7,11 +7,12 @@ import Link from 'next/link';
 export default function BlogPage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // 1. NUEVO ESTADO PARA EL BUSCADOR
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchPosts = async () => {
-      // AQUÍ ESTÁ EL TRUCO: 'comments(count)'
-      // Esto le dice a Supabase: "Trae el post y cuenta sus comentarios"
       const { data, error } = await supabase
         .from('posts')
         .select('*, comments(count)') 
@@ -26,8 +27,18 @@ export default function BlogPage() {
     fetchPosts();
   }, []);
 
-  // Lógica de agrupación por años
-  const groupedPosts = posts.reduce((grupos, post) => {
+  // 2. FILTRADO: Primero filtramos la lista completa
+  const filteredPosts = posts.filter(post => {
+    const term = searchTerm.toLowerCase();
+    const title = (post.title || '').toLowerCase();
+    const content = (post.content || '').toLowerCase();
+    
+    // Si coincide con título O contenido
+    return title.includes(term) || content.includes(term);
+  });
+
+  // 3. AGRUPACIÓN: Ahora agrupamos LA LISTA FILTRADA (no la original)
+  const groupedPosts = filteredPosts.reduce((grupos, post) => {
     const year = new Date(post.created_at).getFullYear();
     if (!grupos[year]) grupos[year] = [];
     grupos[year].push(post);
@@ -39,12 +50,32 @@ export default function BlogPage() {
   if (loading) return <div className="text-white p-10 animate-pulse">Cargando la historia...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto pt-6 px-4"> {/* Agregué px-4 para que no pegue en bordes móvil */}
+    <div className="max-w-4xl mx-auto pt-6 px-4">
       
       <h1 className="text-4xl font-bold text-white mb-2 border-b border-gray-800 pb-4">
         📚 Archivo del Blog
       </h1>
-      <p className="text-gray-400 mb-10">Explorando mis ideas a través del tiempo.</p>
+      <p className="text-gray-400 mb-8">Explorando mis ideas a través del tiempo.</p>
+
+      {/* --- 4. BARRA DE BÚSQUEDA (NUEVO) --- */}
+      <div className="mb-12 relative group">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span className="text-gray-500 text-xl">🔍</span>
+        </div>
+        <input 
+            type="text" 
+            placeholder="Buscar memoria..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 p-4 bg-gray-900 border border-gray-800 rounded-xl text-white focus:border-blue-500 focus:outline-none transition shadow-lg placeholder-gray-600"
+        />
+        {searchTerm && (
+            <div className="text-right mt-2 text-sm text-gray-500">
+                {filteredPosts.length} resultados encontrados
+            </div>
+        )}
+      </div>
+      {/* ----------------------------------- */}
 
       <div className="space-y-12">
         {years.map((year) => (
@@ -90,7 +121,6 @@ export default function BlogPage() {
                           </h3>
                         </Link>
                         
-                        {/* --- ETIQUETA DE FECHA --- */}
                         <span className="text-xs font-mono text-gray-500 bg-black px-2 py-1 rounded border border-gray-800 shrink-0 ml-2">
                           {new Date(post.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                         </span>
@@ -100,17 +130,15 @@ export default function BlogPage() {
                         {post.content}
                       </p>
 
-                      {/* --- BARRA INFERIOR (LINK + COMENTARIOS) --- */}
+                      {/* --- BARRA INFERIOR --- */}
                       <div className="flex items-center gap-4 text-sm">
                         
                         <Link href={`/blog/${post.id}`} className="text-blue-500 hover:text-white transition font-bold">
                           Leer más →
                         </Link>
 
-                        {/* CONTADOR DE COMENTARIOS (NUEVO) */}
                         <div className="flex items-center gap-1 text-gray-500 group-hover:text-gray-300 transition" title="Comentarios">
                             <span>💬</span>
-                            {/* Accedemos al array comments[0].count */}
                             <span>{post.comments && post.comments[0] ? post.comments[0].count : 0}</span>
                         </div>
 
@@ -125,9 +153,17 @@ export default function BlogPage() {
           </div>
         ))}
 
-        {posts.length === 0 && (
+        {/* MENSAJE SI LA BÚSQUEDA NO ENCUENTRA NADA */}
+        {filteredPosts.length === 0 && (
           <div className="text-center py-20 bg-gray-900 rounded-xl border border-dashed border-gray-700">
-            <p className="text-xl text-gray-500">Aún no has escrito historia.</p>
+            <p className="text-xl text-gray-500">
+                {searchTerm ? `No hay nada sobre "${searchTerm}" en los archivos.` : 'Aún no has escrito historia.'}
+            </p>
+            {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="text-blue-400 mt-2 hover:underline">
+                    Borrar búsqueda
+                </button>
+            )}
           </div>
         )}
       </div>

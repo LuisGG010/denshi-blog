@@ -183,7 +183,7 @@ export default async function PostPage({ params }) {
 
         {/* EL FORMULARIO */}
         <div className="bg-gray-900 p-6 rounded-lg border border-gray-800">
-          <CommentForm postId={id} />
+          <CommentForm postId={id} postTitle={post.title} />
         </div>
       </div>
     </div>

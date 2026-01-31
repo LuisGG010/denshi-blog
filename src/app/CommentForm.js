@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
-export default function CommentForm({ postId }) {
+// 1. AÑADIMOS 'postTitle' AQUÍ 👇
+export default function CommentForm({ postId, postTitle }) {
   const [content, setContent] = useState('');
-  const [author, setAuthor] = useState(''); // <--- NUEVO ESTADO PARA EL NOMBRE
+  const [author, setAuthor] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -17,22 +18,37 @@ export default function CommentForm({ postId }) {
     
     setLoading(true);
 
+    // Guardar en Supabase (Base de datos)
     const { error } = await supabase
       .from('comments')
       .insert({
         post_id: postId,
         content: content,
-        author: author || 'Anónimo', // <--- ENVIAMOS EL NOMBRE
+        author: author || 'Anónimo',
         image_url: imageUrl || null
       });
 
     if (error) {
       alert("Error enviando comentario");
     } else {
+      
+      // --- AVISAR A DISCORD ---
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            author: author || 'Anónimo',
+            content: content,
+            // 2. ENVIAMOS EL TÍTULO REAL AQUÍ 👇
+            postTitle: postTitle || 'Sin título' 
+        })
+      });
+      // ------------------------
+
       setContent('');
-      setAuthor(''); // Limpiamos nombre
+      setAuthor('');
       setImageUrl('');
-      router.refresh(); // Recargamos la página para ver el comentario nuevo
+      router.refresh();
     }
     setLoading(false);
   };
