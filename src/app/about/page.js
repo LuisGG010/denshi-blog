@@ -15,7 +15,7 @@ export default function AboutPage() {
              Cuando tengas tu foto, guárdala en 'public/yo.jpg' y cambia el src a "/yo.jpg"
           */}
           <img 
-            src="https://cdn.discordapp.com/attachments/1466758148000973108/1466758533658706112/Denshi_sin-mas.png?ex=697de8d5&is=697c9755&hm=46cff20e0c97a390f818ab8181e6ce88dd216f1ccd5f18404d9bb342769c1e8d&" 
+            src="https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/Denshi_sin-mas.png" 
             alt="Foto de perfil" 
             className="relative w-48 h-48 rounded-full border-4 border-black object-cover bg-gray-800"
           />

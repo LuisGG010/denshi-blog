@@ -11,15 +11,15 @@ import { usePathname } from 'next/navigation';
 const PLAYLIST = [
   { 
     title: "Castle Funk - Deltarune Ch.3", 
-    url: "/music/castle-funk.mp3" 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/castle-funk.mp3" 
   },
   { 
     title: "My Castle Town - Deltarune Ch.2", 
-    url: "/music/my-castle-town.mp3" 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/my-castle-town.mp3" 
   },
   { 
     title: "Neon Mixtape Tour - PvZ2", 
-    url: "/music/neon-mixtape.mp3" 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/neon-mixtape.mp3" 
   }
 ];
 
@@ -65,29 +65,6 @@ export default function Sidebar() {
       }
     };
     fetchStats();
-    
-    const channel = supabase
-      .channel('realtime-stats') // Nombre cualquiera para el canal
-      .on(
-        'postgres_changes', // Escuchar cambios en la base de datos
-        { 
-          event: 'UPDATE', // Solo cuando se actualice algo
-          schema: 'public', 
-          table: 'site_stats',
-          filter: 'id=eq.1' // Solo nos importa la fila con id 1
-        }, 
-        (payload) => {
-          // payload.new trae el dato nuevo fresco
-          console.log("¡Cambio detectado!", payload.new);
-          setTotalViews(payload.new.total_views);
-        }
-      )
-      .subscribe();
-
-    // C. Limpieza al salir (para no dejar conexiones abiertas)
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   // 2. CONTROL DE MÚSICA
