@@ -28,7 +28,7 @@ export default function NotFound() {
         <p className="text-red-400">Error: PAGE_NOT_FOUND</p>
         <p className="text-gray-400">at System.Navigation (routes.js:404)</p>
         <p className="text-gray-400">at User.Input (keyboard:0)</p>
-        <p className="text-blue-400 mt-2 animate-pulse">_ cursors_waiting...</p>
+        <p className="text-blue-400 mt-2 animate-pulse">console.r("Bueno, parece que estás perdido, o ¿eso es lo que pensabas?, bueno, no está mal que intentes buscar una pagina aleatoria, ya sea por un error o cualquier cosa... pero qué tal si... ¿estás buscando algo?, tal vez estés en el sitio equivocado, o tal vez es el correcto, solo tu puedes saberlo..")</p>
       </div>
 
       {/* 4. BOTÓN DE REGRESO */}

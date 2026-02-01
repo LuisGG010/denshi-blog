@@ -26,7 +26,11 @@ export default function RootLayout({ children }) {
             
             <ViewCounter />
             <Sidebar /> 
-            <main className="ml-64 flex-1 p-8 w-full min-h-screen bg-black">
+            
+            {/* --- CORRECCIÓN AQUÍ --- */}
+            {/* Antes: ml-64 (siempre dejaba hueco) */}
+            {/* Ahora: md:ml-64 (solo deja hueco en PC) */}
+            <main className="md:ml-64 flex-1 p-8 w-full min-h-screen bg-black transition-all duration-300">
               {children}
             </main>
 

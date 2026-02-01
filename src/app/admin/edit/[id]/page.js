@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'; 
+import { useState, useEffect, useRef, use } from 'react'; 
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,11 +8,15 @@ import Link from 'next/link';
 export default function EditPostPage({ params }) {
   const { id } = use(params); 
   const router = useRouter();
+  const textareaRef = useRef(null); // Para la herramienta de texto
   
   // --- ESTADOS ---
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState(''); 
+  const [accentColor, setAccentColor] = useState('#3b82f6'); // <--- NUEVO: Color del Post
+  const [textColor, setTextColor] = useState('#ff0000'); // <--- NUEVO: Color para la herramienta de texto
+  
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,6 +34,7 @@ export default function EditPostPage({ params }) {
         setTitle(postData.title || '');
         setContent(postData.content);
         setImageUrl(postData.image_url || ''); 
+        setAccentColor(postData.color || '#3b82f6'); // <--- CARGAMOS EL COLOR GUARDADO
       }
 
       // B. Pedimos los Comentarios
@@ -49,6 +54,23 @@ export default function EditPostPage({ params }) {
     fetchData();
   }, [id]);
 
+  // FUNCIÓN PARA INSERTAR COLOR EN EL TEXTO (Igual que en crear post)
+  const insertColorTag = () => {
+    const tag = `[Escribe aquí](#color=${textColor})`;
+    const textarea = textareaRef.current;
+    if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const textBefore = content.substring(0, start);
+        const textAfter = content.substring(end, content.length);
+        const selectedText = content.substring(start, end);
+        const finalTag = selectedText ? `[${selectedText}](#color=${textColor})` : tag;
+        setContent(textBefore + finalTag + textAfter);
+    } else {
+        setContent(content + tag);
+    }
+  };
+
   // 2. GUARDAR CAMBIOS DEL POST
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -57,7 +79,8 @@ export default function EditPostPage({ params }) {
       .update({ 
         title: title,
         content: content, 
-        image_url: imageUrl || null 
+        image_url: imageUrl || null,
+        color: accentColor // <--- GUARDAMOS EL COLOR ACTUALIZADO
       })
       .eq('id', id);
 
@@ -71,7 +94,6 @@ export default function EditPostPage({ params }) {
   // 3. BORRAR COMENTARIO
   const handleDeleteComment = async (commentId) => {
     if (!window.confirm("¿Borrar este comentario?")) return;
-    
     const { error } = await supabase.from('comments').delete().eq('id', commentId);
     if (!error) {
       setComments(comments.filter(c => c.id !== commentId));
@@ -82,7 +104,9 @@ export default function EditPostPage({ params }) {
 
   return (
     <div className='min-h-screen p-10 flex flex-col items-center bg-black text-white'>
-      <h1 className='text-2xl font-bold text-blue-500 mb-6'>Editar Post & Moderar</h1>
+      <h1 className='text-2xl font-bold mb-6' style={{ color: accentColor }}>
+        Editar Post & Moderar
+      </h1>
 
       {/* --- FORMULARIO DE EDICIÓN DEL POST --- */}
       <form onSubmit={handleUpdate} className='w-full max-w-md flex flex-col gap-4 mb-12 border-b border-gray-800 pb-10'>
@@ -106,7 +130,54 @@ export default function EditPostPage({ params }) {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className='w-full p-3 bg-gray-900 border border-gray-700 rounded text-white text-lg font-bold focus:outline-none focus:border-blue-500'
+                className='w-full p-3 bg-gray-900 border border-gray-700 rounded text-lg font-bold focus:outline-none'
+                style={{ color: accentColor, borderColor: accentColor }} // Preview en vivo
+            />
+        </div>
+
+        {/* SELECTOR DE COLOR DEL TEMA */}
+        <div className="flex items-center gap-4 border-b border-gray-800 pb-4">
+            <div>
+                <label className="text-gray-400 text-sm font-bold block mb-1">Color del Tema:</label>
+                <div className="flex items-center gap-3">
+                    <input 
+                        type="color" 
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer border-none bg-transparent"
+                    />
+                    <span className="text-xs text-gray-500 font-mono">{accentColor}</span>
+                </div>
+            </div>
+        </div>
+
+        {/* BARRA DE HERRAMIENTAS DE TEXTO */}
+        <div className="flex items-center gap-2 bg-gray-800 p-2 rounded-t-lg border border-gray-700 border-b-0">
+             <span className="text-xs text-gray-400 font-bold mr-2">Herramientas:</span>
+             <div className="flex items-center gap-2 bg-black px-2 py-1 rounded border border-gray-600">
+                <input 
+                    type="color" 
+                    value={textColor} 
+                    onChange={(e) => setTextColor(e.target.value)}
+                    className="w-6 h-6 bg-transparent border-none cursor-pointer"
+                />
+                <button 
+                    type="button"
+                    onClick={insertColorTag}
+                    className="text-xs font-bold text-white hover:text-blue-400 transition"
+                >
+                    Agregar Color
+                </button>
+             </div>
+        </div>
+
+        {/* CONTENIDO */}
+        <div>
+            <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className='w-full p-4 bg-gray-900 border border-gray-700 rounded-b-lg text-white h-60 focus:outline-none focus:border-blue-500'
             />
         </div>
 
@@ -121,29 +192,23 @@ export default function EditPostPage({ params }) {
             />
         </div>
 
-        {/* CONTENIDO */}
-        <div>
-            <label className='text-gray-400 text-sm font-bold block mb-2'>Contenido:</label>
-            <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className='w-full p-4 bg-gray-900 border border-gray-700 rounded text-white h-40 focus:outline-none focus:border-blue-500'
-            />
-        </div>
-
         <div className="flex gap-4 mt-2">
           <Link href="/admin" className='flex-1 py-3 text-center bg-gray-800 rounded hover:bg-gray-700 transition'>
             Cancelar
           </Link>
-          <button type="submit" className='flex-1 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold transition'>
+          <button 
+            type="submit" 
+            className='flex-1 py-3 text-white rounded font-bold transition shadow-lg'
+            style={{ backgroundColor: accentColor }} // Botón del color del tema
+          >
             Guardar Cambios
           </button>
         </div>
       </form>
 
-      {/* --- ZONA DE MODERACIÓN (AQUÍ ESTÁ EL CAMBIO) --- */}
+      {/* --- ZONA DE MODERACIÓN --- */}
       <div className='w-full max-w-md'>
-        <h3 className='text-xl text-red-400 font-bold mb-4'>
+        <h3 className='text-xl font-bold mb-4' style={{ color: accentColor }}>
           Moderar Comentarios ({comments.length})
         </h3>
 
@@ -151,30 +216,25 @@ export default function EditPostPage({ params }) {
           {comments.map((comment) => (
             <div key={comment.id} className='bg-gray-900/50 p-3 rounded border border-gray-800 flex gap-4 items-start group'>
               
-              {/* FOTO DEL USUARIO (Si puso imagen en el comentario) */}
               {comment.image_url && (
                  <div className="shrink-0">
                     <a href={comment.image_url} target="_blank" rel="noopener noreferrer">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                            src={comment.image_url} 
-                            alt="Img Comentario" 
-                            className="w-12 h-12 rounded object-cover border border-gray-700 hover:opacity-75"
-                        />
+                         {/* eslint-disable-next-line @next/next/no-img-element */}
+                         <img 
+                             src={comment.image_url} 
+                             alt="Img Comentario" 
+                             className="w-12 h-12 rounded object-cover border border-gray-700 hover:opacity-75"
+                         />
                     </a>
                  </div>
               )}
 
-              {/* DATOS DEL COMENTARIO */}
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start">
-                    
                     <div className="pr-2">
-                        {/* --- AQUÍ MOSTRAMOS EL AUTOR EN AZUL --- */}
-                        <span className="text-blue-400 font-bold text-xs block mb-1">
+                        <span className="font-bold text-xs block mb-1" style={{ color: accentColor }}>
                             {comment.author || 'Anónimo'}
                         </span>
-                        
                         <p className='text-gray-300 text-sm break-words whitespace-pre-wrap line-clamp-4'>
                             {comment.content}
                         </p>

@@ -7,9 +7,25 @@ import Link from 'next/link';
 export default function BlogPage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // 1. NUEVO ESTADO PARA EL BUSCADOR
   const [searchTerm, setSearchTerm] = useState('');
+
+  // --- 🧼 FUNCIÓN DE LIMPIEZA DE TEXTO ---
+  // Esta función elimina los símbolos de Markdown para la vista previa
+  const getPlainText = (markdown) => {
+    if (!markdown) return '';
+    return markdown
+      // 1. Elimina los links y colores: [Texto](#color=...) -> Texto
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') 
+      // 2. Elimina imágenes: ![Alt](url) -> ''
+      .replace(/!\[.*?\]\(.*?\)/g, '') 
+      // 3. Elimina negritas/cursivas/código: **, *, `, _
+      .replace(/(\*\*|__|\*|_|`)/g, '') 
+      // 4. Elimina encabezados: # Titulo -> Titulo
+      .replace(/^#+\s+/gm, '') 
+      // 5. Reemplaza saltos de línea por espacios
+      .replace(/\n/g, ' ') 
+      .trim();
+  };
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -27,17 +43,13 @@ export default function BlogPage() {
     fetchPosts();
   }, []);
 
-  // 2. FILTRADO: Primero filtramos la lista completa
   const filteredPosts = posts.filter(post => {
     const term = searchTerm.toLowerCase();
     const title = (post.title || '').toLowerCase();
     const content = (post.content || '').toLowerCase();
-    
-    // Si coincide con título O contenido
     return title.includes(term) || content.includes(term);
   });
 
-  // 3. AGRUPACIÓN: Ahora agrupamos LA LISTA FILTRADA (no la original)
   const groupedPosts = filteredPosts.reduce((grupos, post) => {
     const year = new Date(post.created_at).getFullYear();
     if (!grupos[year]) grupos[year] = [];
@@ -50,14 +62,14 @@ export default function BlogPage() {
   if (loading) return <div className="text-white p-10 animate-pulse">Cargando la historia...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto pt-6 px-4">
+    <div className="max-w-4xl mx-auto pt-24 px-4 pb-20"> {/* Ajusté pt-24 para que no choque con menú */}
       
       <h1 className="text-4xl font-bold text-white mb-2 border-b border-gray-800 pb-4">
         📚 Archivo del Blog
       </h1>
       <p className="text-gray-400 mb-8">Explorando mis ideas a través del tiempo.</p>
 
-      {/* --- 4. BARRA DE BÚSQUEDA (NUEVO) --- */}
+      {/* --- BARRA DE BÚSQUEDA --- */}
       <div className="mb-12 relative group">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <span className="text-gray-500 text-xl">🔍</span>
@@ -75,7 +87,6 @@ export default function BlogPage() {
             </div>
         )}
       </div>
-      {/* ----------------------------------- */}
 
       <div className="space-y-12">
         {years.map((year) => (
@@ -116,7 +127,11 @@ export default function BlogPage() {
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-2">
                         <Link href={`/blog/${post.id}`}>
-                          <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition">
+                          {/* Ahora aplicamos el color guardado al título también en la vista previa si quieres */}
+                          <h3 
+                            className="text-xl font-bold text-white group-hover:opacity-80 transition"
+                            style={{ color: post.color || 'white' }} 
+                          >
                             {post.title || "Post sin título"}
                           </h3>
                         </Link>
@@ -126,13 +141,12 @@ export default function BlogPage() {
                         </span>
                       </div>
                       
+                      {/* 🔥 AQUÍ USAMOS LA FUNCIÓN DE LIMPIEZA */}
                       <p className="text-gray-400 line-clamp-2 text-sm mb-4">
-                        {post.content}
+                        {getPlainText(post.content)}
                       </p>
 
-                      {/* --- BARRA INFERIOR --- */}
                       <div className="flex items-center gap-4 text-sm">
-                        
                         <Link href={`/blog/${post.id}`} className="text-blue-500 hover:text-white transition font-bold">
                           Leer más →
                         </Link>
@@ -141,7 +155,6 @@ export default function BlogPage() {
                             <span>💬</span>
                             <span>{post.comments && post.comments[0] ? post.comments[0].count : 0}</span>
                         </div>
-
                       </div>
 
                     </div>
@@ -153,7 +166,6 @@ export default function BlogPage() {
           </div>
         ))}
 
-        {/* MENSAJE SI LA BÚSQUEDA NO ENCUENTRA NADA */}
         {filteredPosts.length === 0 && (
           <div className="text-center py-20 bg-gray-900 rounded-xl border border-dashed border-gray-700">
             <p className="text-xl text-gray-500">
