@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-// 1. IMPORTAMOS LA FUNCIÓN DE NOTIFICAR
-import { sendPushNotification } from '@/utils/sendNotification'; 
 
 export default function NewPostForm() {
   const [title, setTitle] = useState('');
@@ -26,20 +24,14 @@ export default function NewPostForm() {
       });
 
     if (error) {
-      alert("Error guardando el post: " + error.message);
+      alert("Error guardando el post");
     } else {
-      // ✅ ÉXITO: EL POST SE GUARDÓ EN LA BASE DE DATOS
-      
-      // 2. DISPARAMOS LA NOTIFICACIÓN A GOOGLE/ONESIGNAL
-      // No usamos 'await' estricto para que no congele la pantalla si tarda un poco
-      sendPushNotification(title); 
-
-      // 3. LIMPIAMOS TODO
+      // ÉXITO: Limpiamos formulario y refrescamos
       setTitle('');
       setContent('');
       setImageUrl('');
-      alert("¡Post publicado y notificaciones enviadas! 🚀");
       router.refresh();
+      // (Aquí quitamos la llamada a sendPushNotification)
     }
     setLoading(false);
   };
@@ -47,7 +39,6 @@ export default function NewPostForm() {
   return (
     <form onSubmit={handleSubmit} className='bg-gray-900 p-6 rounded-lg border border-gray-800 shadow-xl'>
       
-      {/* INPUT DE TÍTULO */}
       <div className="mb-4">
         <label className="block text-sm text-gray-400 mb-1 font-bold">Título:</label>
         <input 

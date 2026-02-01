@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import NewPostForm from '../NewPostForm';
+import NewPostForm from '../blog/NewPostForm';
 import AdminList from './AdminList';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
