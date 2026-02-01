@@ -65,6 +65,29 @@ export default function Sidebar() {
       }
     };
     fetchStats();
+    
+    const channel = supabase
+      .channel('realtime-stats') // Nombre cualquiera para el canal
+      .on(
+        'postgres_changes', // Escuchar cambios en la base de datos
+        { 
+          event: 'UPDATE', // Solo cuando se actualice algo
+          schema: 'public', 
+          table: 'site_stats',
+          filter: 'id=eq.1' // Solo nos importa la fila con id 1
+        }, 
+        (payload) => {
+          // payload.new trae el dato nuevo fresco
+          console.log("¡Cambio detectado!", payload.new);
+          setTotalViews(payload.new.total_views);
+        }
+      )
+      .subscribe();
+
+    // C. Limpieza al salir (para no dejar conexiones abiertas)
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // 2. CONTROL DE MÚSICA
