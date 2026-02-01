@@ -154,7 +154,7 @@ export default function Sidebar() {
             <TransitionLink href="/blog" className={linkClass('/blog')}>📝 Blog & Posts</TransitionLink>
             <TransitionLink href="/social" className={linkClass('/social')}>🌐 Redes Sociales</TransitionLink>
             <TransitionLink href="/about" className={linkClass('/about')}>😎 Sobre Mí</TransitionLink>
-            <TransitionLink href="/credits" className={linkClass('/credits')}>😎 Créditos</TransitionLink>
+            {/*<TransitionLink href="/credits" className={linkClass('/credits')}>😎 Créditos</TransitionLink>*/}
             <TransitionLink href="/admin" className={linkClass('/admin')}>🔒 Admin</TransitionLink>
           </nav>
         </div>
