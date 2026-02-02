@@ -14,7 +14,10 @@ export default function HomePage() {
         loop 
         muted 
         playsInline
-        className="fixed inset-0 w-full h-full object-cover z-0 pointer-events-none select-none"
+        className="
+            fixed inset-0 w-full h-full object-cover z-0 pointer-events-none select-none
+            opacity-100  /* <--- AQUÍ ESTÁ LA MAGIA (50% de opacidad) */
+        "
         onTimeUpdate={(e) => e.target.playbackRate = 0.6} 
       >
       </video>
