@@ -35,6 +35,16 @@ export default async function PostPage({ params }) {
   const themeColor = post.color || '#3b82f6';
   const content = post.content; 
 
+  // --- CONFIGURACIÓN DE FECHA (Sin segundos) ---
+  const dateOptions = {
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false // Ponlo en true si prefieres 4:30 PM en vez de 16:30
+  };
+
   return (
     <div className="min-h-screen bg-black/40">
       <div className="max-w-3xl mx-auto py-12 px-6 text-white">
@@ -57,14 +67,11 @@ export default async function PostPage({ params }) {
             
             <ReactMarkdown
               components={{
-                // ✅ 1. SOLUCIÓN PARA ENTERS (CSS)
                 p: ({node, children, ...props}) => (
                   <p className="mb-4 whitespace-pre-wrap" {...props}>
                       {children}
                   </p>
                 ),
-
-                // ✅ 2. CÓDIGO (HACKER STYLE)
                 code({node, inline, className, children, ...props}) {
                   const match = /language-(\w+)/.exec(className || '')
                   return !inline && match ? (
@@ -75,38 +82,24 @@ export default async function PostPage({ params }) {
                     <code className={`${className} bg-gray-800 rounded px-1`} {...props}>{children}</code>
                   )
                 },
-
-                // ✅ 3. EL SUPER DETECTOR (Soporta Color + Tamaño)
-                // Lee códigos como: [Texto](#color=red&size=40px)
                 a: ({ node, href, children, ...props }) => {
                   const decodedHref = decodeURIComponent(href || '');
-
                   const hasColor = decodedHref.includes('color=');
                   const hasSize = decodedHref.includes('size=');
 
-                  // Si tiene color o tamaño, aplicamos estilos personalizados
                   if (hasColor || hasSize) {
                     let customStyle = { fontWeight: 'bold' }; 
-
-                    // Extraer Color
                     if (hasColor) {
-                      // Rompemos el string para sacar el valor entre "color=" y el siguiente "&"
                       const parts = decodedHref.split('color=')[1].split('&')[0];
                       customStyle.color = parts;
                     }
-
-                    // Extraer Tamaño
                     if (hasSize) {
                       const parts = decodedHref.split('size=')[1].split('&')[0];
-                      // Si el usuario puso solo número, agregamos "px"
                       customStyle.fontSize = isNaN(parts) ? parts : `${parts}px`;
                       customStyle.lineHeight = '1.2'; 
                     }
-
                     return <span style={customStyle}>{children}</span>;
                   }
-
-                  // Si es un link normal, lo pintamos azul
                   return (
                       <a href={href} {...props} className="text-blue-400 hover:underline" target="_blank">
                           {children}
@@ -131,8 +124,9 @@ export default async function PostPage({ params }) {
           )}
 
           <div className="mt-4 text-gray-500 text-sm flex justify-between items-center border-t border-gray-800 pt-4">
+              {/* 👇 FECHA DEL POST CORREGIDA 👇 */}
               <span>
-                  {new Date(post.created_at).toLocaleString()}
+                  {new Date(post.created_at).toLocaleString('es-MX', dateOptions)}
               </span>
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: themeColor }}></span>
           </div>
@@ -167,12 +161,12 @@ export default async function PostPage({ params }) {
                           <span className="font-bold text-sm md:text-base mr-2" style={{ color: themeColor }}>
                               {comment.author || 'Anónimo'}
                           </span>
-                          <span>
-                              {new Date(post.created_at).toLocaleString('es-MX', dateOptions)}
+                          {/* 👇 FECHA DEL COMENTARIO CORREGIDA 👇 */}
+                          <span className="text-[10px] text-gray-600">
+                            {new Date(comment.created_at).toLocaleString('es-MX', dateOptions)}
                           </span>
                       </div>
 
-                      {/* ✅ ENTERS EN COMENTARIOS */}
                       <p className="text-gray-300 text-sm whitespace-pre-wrap">
                         {comment.content}
                       </p>
