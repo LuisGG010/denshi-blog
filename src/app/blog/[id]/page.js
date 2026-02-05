@@ -42,7 +42,8 @@ export default async function PostPage({ params }) {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false // Ponlo en true si prefieres 4:30 PM en vez de 16:30
+    hour12: false, // Ponlo en true si prefieres 4:30 PM en vez de 16:30
+    timeZone: 'America/Mexico_City' // 👈 ESTA ES LA CLAVE (Fuerza horario de México)
   };
 
   return (
