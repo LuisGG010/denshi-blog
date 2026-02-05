@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation';
 // LISTA DE CANCIONES
 const PLAYLIST = [
   { 
-    title: "Castle Funk - Deltarune Ch.3", 
+    title: "Castle Funk - Deltarune Ch.4", 
     url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/castle-funk.mp3" 
   },
   { 

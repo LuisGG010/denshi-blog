@@ -5,25 +5,12 @@ import Link from 'next/link';
 export default function HomePage() {
   return (
     // CONTENEDOR PRINCIPAL
-    <div className="relative min-h-screen text-white p-6 flex flex-col items-center justify-center font-sans">
+    <div className="relative min-h-screen text-white p-6 flex flex-col items-center justify-center font-sans bg-black/40">
       
-      {/* --- 1. VIDEO DE FONDO --- */}
-      <video 
-        src="https://i.imgur.com/6IIG8Is.mp4" 
-        autoPlay 
-        loop 
-        muted 
-        playsInline
-        className="
-            fixed inset-0 w-full h-full object-cover z-0 pointer-events-none select-none
-            opacity-100  /* <--- AQUÍ ESTÁ LA MAGIA (50% de opacidad) */
-        "
-        onTimeUpdate={(e) => e.target.playbackRate = 0.6} 
-      >
-      </video>
+      
 
       {/* CAPA OSCURA */}
-      <div className="fixed inset-0 bg-black/60 z-0 pointer-events-none"></div>
+      <div className="fixed inset-0 z-0 pointer-events-none"></div>
 
       {/* --- 2. EL CONTENIDO REAL --- */}
       <div className="relative z-10 w-full max-w-5xl flex flex-col gap-8 pt-10 pb-10">
@@ -116,7 +103,8 @@ export default function HomePage() {
           </Link>
 
           {/* CAJA 4: MINIJUEGOS */}
-          <div 
+          <Link 
+            href="/minigames"
             className="
               group relative md:col-span-3 h-24
               bg-gray-900/50 border border-white/10 rounded-3xl p-6
@@ -128,10 +116,7 @@ export default function HomePage() {
                 <span className="text-4xl">🎮</span>
                 <h3 className="text-2xl font-bold">Minijuegos</h3>
              </div>
-             <span className="text-xs text-gray-400 uppercase tracking-widest group-hover:text-yellow-400 hidden md:block">
-                Próximamente
-             </span>
-          </div>
+          </Link>
 
         </div>
         

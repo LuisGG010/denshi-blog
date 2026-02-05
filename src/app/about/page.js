@@ -5,19 +5,9 @@ import Link from 'next/link';
 export default function AboutPage() {
   return (
     // 1. WRAPPER GENERAL (Sin límites de ancho para que el video cubra todo)
-    <div className="min-h-screen"> 
+    <div className="min-h-screen bg-black/40"> 
 
-      {/* --- CAPA FONDO: VIDEO (z-0) --- */}
-      <video 
-        src="https://i.imgur.com/6IIG8Is.mp4" 
-        autoPlay 
-        loop 
-        muted 
-        playsInline
-        className="fixed inset-0 w-full h-full object-cover z-0 pointer-events-none select-none opacity-40"
-        onTimeUpdate={(e) => e.target.playbackRate = 0.6} 
-      >
-      </video>
+      
       
       {/* --- CAPA CONTENIDO (z-10) --- */}
       {/* Aquí movemos las clases de layout (max-w-4xl, padding, etc) */}

@@ -46,19 +46,8 @@ export default function SocialPage() {
   ];
 
   return (
-    <div className="min-h-screen"> 
+    <div className="min-h-screen bg-black/40"> 
       
-      {/* --- 1. CAPA FONDO: VIDEO (z-0) --- */}
-      <video 
-        src="https://i.imgur.com/6IIG8Is.mp4" 
-        autoPlay 
-        loop 
-        muted 
-        playsInline
-        className="fixed inset-0 w-full h-full object-cover z-0 pointer-events-none select-none opacity-40"
-        onTimeUpdate={(e) => e.target.playbackRate = 0.6} 
-      >
-      </video>
       
       {/* --- 2. CAPA CONTENIDO (z-10) --- */}
       {/* Todo lo que esté dentro de este div estará ENCIMA del video */}

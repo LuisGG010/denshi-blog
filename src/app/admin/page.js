@@ -61,7 +61,7 @@ export default function AdminPage() {
       localStorage.setItem('admin_auth', 'true');
       fetchPosts();
     } else {
-      alert("PIN Incorrecto. 🚨");
+      alert("PIN Incorrecto. ");
       setPin('');
     }
   };

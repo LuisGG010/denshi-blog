@@ -53,23 +53,11 @@ export default function BlogPage() {
 
   const years = Object.keys(groupedPosts).sort((a, b) => b - a);
 
-  if (loading) return <div className="text-white p-10 animate-pulse">Cargando la historia...</div>;
+  if (loading) return <div className="bg-black/40 text-white p-10 animate-pulse">Cargando la historia...</div>;
 
   return (
-    <div className="min-h-screen"> 
+    <div className="min-h-screen bg-black/40"> 
       
-      {/* --- 1. CAPA FONDO: VIDEO (z-0) --- */}
-      <video 
-        src="https://i.imgur.com/6IIG8Is.mp4" 
-        autoPlay 
-        loop 
-        muted 
-        playsInline
-        className="fixed inset-0 w-full h-full object-cover z-0 pointer-events-none select-none opacity-40"
-        onTimeUpdate={(e) => e.target.playbackRate = 0.6} 
-      >
-      </video>
-
       {/* --- 2. CAPA CONTENIDO (z-10) --- */}
       <div className="relative z-10 max-w-4xl mx-auto pt-24 px-4 pb-20"> 
         
