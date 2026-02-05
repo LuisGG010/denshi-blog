@@ -167,8 +167,8 @@ export default async function PostPage({ params }) {
                           <span className="font-bold text-sm md:text-base mr-2" style={{ color: themeColor }}>
                               {comment.author || 'Anónimo'}
                           </span>
-                          <span className="text-[10px] text-gray-600">
-                            {new Date(comment.created_at).toLocaleString()}
+                          <span>
+                              {new Date(post.created_at).toLocaleString('es-MX', dateOptions)}
                           </span>
                       </div>
 
