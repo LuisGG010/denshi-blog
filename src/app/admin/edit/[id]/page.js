@@ -74,17 +74,26 @@ export default function EditPostPage({ params }) {
   // 2. GUARDAR CAMBIOS DEL POST
   const handleUpdate = async (e) => {
     e.preventDefault();
-    const { error } = await supabase
-      .from('posts')
-      .update({ 
-        title: title,
-        content: content, 
-        image_url: imageUrl || null,
-        color: accentColor // <--- GUARDAMOS EL COLOR ACTUALIZADO
+    
+    // LLAMAMOS AL ROBOT
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'update_post',
+        id: id,
+        data: { // Estos son los datos nuevos
+          title: title,
+          content: content,
+          image_url: imageUrl || null,
+          color: accentColor
+        }
       })
-      .eq('id', id);
+    });
 
-    if (error) alert('Error: ' + error.message);
+    const responseData = await res.json();
+
+    if (!res.ok) alert('Error: ' + responseData.error);
     else {
       router.push('/admin');
       router.refresh();
@@ -94,9 +103,21 @@ export default function EditPostPage({ params }) {
   // 3. BORRAR COMENTARIO
   const handleDeleteComment = async (commentId) => {
     if (!window.confirm("¿Borrar este comentario?")) return;
-    const { error } = await supabase.from('comments').delete().eq('id', commentId);
-    if (!error) {
+
+    // LLAMAMOS AL ROBOT PARA BORRAR EL COMENTARIO
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'delete_comment',
+        id: commentId
+      })
+    });
+
+    if (res.ok) {
       setComments(comments.filter(c => c.id !== commentId));
+    } else {
+      alert("Error al borrar comentario");
     }
   };
 

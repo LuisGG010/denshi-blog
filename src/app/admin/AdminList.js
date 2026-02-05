@@ -12,8 +12,21 @@ export default function AdminList({ posts }) {
   const handleDelete = async (id) => {
     const confirmacion = window.confirm("¿Seguro que quieres borrar este post?");
     if (!confirmacion) return;
-    const { error } = await supabase.from('posts').delete().eq('id', id);
-    if (error) alert("Error: " + error.message);
+
+    // 1. LLAMAMOS AL ROBOT (API) EN LUGAR DE A SUPABASE DIRECTO
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        action: 'delete_post', // Le decimos qué hacer
+        id: id 
+      }),
+    });
+
+    const data = await res.json();
+
+    // 2. VERIFICAMOS SI SALIÓ BIEN
+    if (!res.ok) alert("Error: " + data.error);
     else router.refresh();
   };
 
