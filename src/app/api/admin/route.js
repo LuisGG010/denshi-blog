@@ -6,8 +6,7 @@ export async function POST(request) {
     const body = await request.json();
     const { action, id, data } = body;
 
-    // 1. CREAMOS EL CLIENTE CON LA LLAVE MAESTRA (service_role)
-    // Esta llave se salta todas las reglas de seguridad (RLS)
+    // 🔑 USAMOS LA LLAVE MAESTRA
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -15,8 +14,13 @@ export async function POST(request) {
 
     let result;
 
-    // 2. EJECUTAMOS LA ORDEN QUE NOS MANDASTE
     switch (action) {
+      // 👇👇👇 NUEVO PODER: CREAR POST 👇👇👇
+      case 'create_post':
+        result = await supabaseAdmin.from('posts').insert(data);
+        break;
+      // 👆👆👆 FIN DE LO NUEVO 👆👆👆
+
       case 'delete_post':
         result = await supabaseAdmin.from('posts').delete().eq('id', id);
         break;
@@ -30,15 +34,13 @@ export async function POST(request) {
         break;
 
       default:
-        return NextResponse.json({ error: 'Acción desconocida' }, { status: 400 });
+        return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
     }
 
     if (result.error) throw result.error;
-
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    // Si algo falla (ej: llave incorrecta), devolvemos error
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
