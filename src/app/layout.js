@@ -21,6 +21,10 @@ export const metadata = {
   keywords: ['Blog', 'Denshi', 'Programación', 'Next.js', 'Furry', 'Gaming', 'Desarrollo Web'],
   
   authors: [{ name: 'Denshi', url: 'https://denshi-blog.vercel.app' }],
+
+  verification: {
+    google: '_3jh8lniYRmNeE8LP2XAsd2MrSJ6TCKbnaYru5pNi3M',
+  },
   
   openGraph: {
     title: 'Denshi Blog',
