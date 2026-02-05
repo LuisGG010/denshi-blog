@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'; // Importamos useRef
-import { supabase } from '@/lib/supabase';
+import { useState, useRef } from 'react';
+// import { supabase } from '@/lib/supabase'; // <-- YA NO LO NECESITAMOS AQUÍ
 import { useRouter } from 'next/navigation';
 
 export default function NewPostForm() {
@@ -15,13 +15,12 @@ export default function NewPostForm() {
   
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const textareaRef = useRef(null); // Referencia para escribir en el textarea
+  const textareaRef = useRef(null);
 
   // FUNCIÓN PARA INSERTAR CÓDIGO DE COLOR
   const insertColorTag = () => {
     const tag = `[Escribe aquí](#color=${textColor})`;
     
-    // Truco para insertar donde esté el cursor (o al final)
     const textarea = textareaRef.current;
     if (textarea) {
         const start = textarea.selectionStart;
@@ -29,7 +28,6 @@ export default function NewPostForm() {
         const textBefore = content.substring(0, start);
         const textAfter = content.substring(end, content.length);
         
-        // Si el usuario seleccionó texto, lo envolvemos
         const selectedText = content.substring(start, end);
         const finalTag = selectedText ? `[${selectedText}](#color=${textColor})` : tag;
 
@@ -39,25 +37,36 @@ export default function NewPostForm() {
     }
   };
 
+  // --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase
-      .from('posts')
-      .insert({ 
-        title: title,
-        content: content, 
-        image_url: imageUrl || null,
-        color: accentColor 
-      });
+    // EN LUGAR DE SUPABASE DIRECTO, LLAMAMOS AL ROBOT (API)
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'create_post', // Le decimos "Quiero crear"
+        data: {
+          title: title,
+          content: content,
+          image_url: imageUrl || null,
+          color: accentColor
+        }
+      })
+    });
 
-    if (error) {
-      alert("Error: " + error.message);
+    const result = await res.json();
+
+    if (!res.ok) {
+      alert("Error: " + result.error);
     } else {
+      // SI TODO SALIÓ BIEN, LIMPIAMOS
       setTitle('');
       setContent('');
       setImageUrl('');
+      alert("¡Post creado con éxito!"); // Feedback visual
       router.refresh();
     }
     setLoading(false);
@@ -66,7 +75,7 @@ export default function NewPostForm() {
   return (
     <form onSubmit={handleSubmit} className='bg-gray-900 p-6 rounded-lg border border-gray-800 shadow-xl'>
       
-      {/* Título y Color del Post (Lo que hicimos antes) */}
+      {/* Título y Color */}
       <div className="mb-4">
         <label className="block text-sm text-gray-400 mb-1 font-bold">Título:</label>
         <input 
@@ -90,7 +99,6 @@ export default function NewPostForm() {
       <div className="mb-2 flex items-center gap-2 bg-gray-800 p-2 rounded-t-lg border border-gray-700 border-b-0">
          <span className="text-xs text-gray-400 font-bold mr-2">Herramientas:</span>
          
-         {/* SELECTOR DE COLOR DE TEXTO */}
          <div className="flex items-center gap-2 bg-black px-2 py-1 rounded border border-gray-600">
             <input 
                 type="color" 
@@ -116,7 +124,7 @@ export default function NewPostForm() {
       {/* CONTENIDO */}
       <div className="mb-4">
         <textarea
-          ref={textareaRef} // Conectamos la referencia
+          ref={textareaRef}
           className='w-full p-3 bg-black text-white border border-gray-700 rounded-b-lg focus:border-blue-500 focus:outline-none min-h-[150px]'
           placeholder="Escribe aquí..."
           value={content}
@@ -125,7 +133,7 @@ export default function NewPostForm() {
         />
       </div>
 
-      {/* Inputs restantes... */}
+      {/* Link de Imagen */}
       <div className="mb-4">
         <input 
           type="text" 
