@@ -140,27 +140,31 @@ export default function PlaceGame() {
       {/* ÁREA DE JUEGO */}
       <div className="flex-1 w-full h-full relative">
         <TransformWrapper
-            initialScale={0.5} // Empezamos más lejos para ver todo el mapa
+            initialScale={0.5}
             minScale={0.1}
-            maxScale={40}      // ⬅️ AUMENTAMOS ZOOM (Antes 25, ahora 40 para ver bien los pixels pequeños)
+            maxScale={40}
             centerOnInit={true}
             wheel={{ step: 0.2 }}
             doubleClick={{ disabled: true }}
+            // 👇 LA SOLUCIÓN MÁGICA 👇
+            // Esto permite mover el mapa libremente, incluso "fuera" de la pantalla.
+            // Así puedes traer los bordes al centro cómodamente.
+            limitToBounds={false} 
         >
-            {({ zoomIn, zoomOut, resetTransform }) => (
+            {({ zoomIn, zoomOut, resetTransform, centerView }) => (
             <>
-                {/* Botones Zoom */}
                 <div className="hidden md:flex absolute bottom-32 right-6 flex-col gap-2 z-40">
                     <button onClick={() => zoomIn()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">+</button>
                     <button onClick={() => zoomOut()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">-</button>
-                    <button onClick={() => resetTransform()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs">↺</button>
+                    
+                    {/* 👇 BOTÓN CORREGIDO: Usamos centerView(0.5) 👇 
+                        El 0.5 es el zoom al que quieres que regrese (igual que tu initialScale)
+                    */}
+                    <button onClick={() => centerView(0.5)} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs">↺</button>
                 </div>
 
                 <TransformComponent
                     wrapperStyle={{ width: "100%", height: "100%" }}
-                    // 👇 AQUÍ ESTÁ EL CAMBIO MÁGICO 👇
-                    // Agregamos display: flex, justify-center, align-items-center
-                    // Esto fuerza al contenido (el div blanco de 800px) a estar siempre en el centro
                     contentStyle={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}
                 >
                     <div 
