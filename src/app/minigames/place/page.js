@@ -15,6 +15,8 @@ export default function PlaceGame() {
   const [cooldown, setCooldown] = useState(0);
 
   const canvasRef = useRef(null);
+  const transformRef = useRef(null);
+  
   const [hoverPos, setHoverPos] = useState(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
 
@@ -43,14 +45,25 @@ export default function PlaceGame() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // 2. RELOJ TIC-TAC
+  // 2. ZOOM AUTOMÁTICO
+  useEffect(() => {
+    setTimeout(() => {
+        if (transformRef.current) {
+            const { centerView } = transformRef.current;
+            const initialZoom = window.innerWidth > 768 ? 1 : 0.4;
+            centerView(initialZoom);
+        }
+    }, 100);
+  }, []);
+
+  // 3. RELOJ TIC-TAC
   useEffect(() => {
     if (cooldown <= 0) return;
     const interval = setInterval(() => setCooldown(p => p <= 1 ? 0 : p - 1), 1000);
     return () => clearInterval(interval);
   }, [cooldown]);
 
-  // 3. DIBUJAR CANVAS
+  // 4. DIBUJAR CANVAS
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -114,14 +127,14 @@ export default function PlaceGame() {
   };
 
   return (
-    // ⚠️ RECUPERÉ 'md:ml-64' QUE SE HABÍA PERDIDO
-    <div className="relative h-screen flex flex-col bg-[#d9d4d7] touch-none overflow-hidden md:ml-64">
+    // 🛠️ FIX PC: Volvemos a 'fixed inset-0' para llenar toda la pantalla real.
+    // Quitamos 'md:ml-64' para eliminar el espacio vacío a la izquierda.
+    <div className="fixed inset-0 flex flex-col bg-[#d9d4d7] touch-none overflow-hidden z-0">
       
-      {/* HEADER FLOTANTE */}
+      {/* HEADER */}
       <div className="absolute top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <div className="bg-white/90 backdrop-blur px-5 py-2 rounded-full shadow-lg pointer-events-auto border border-gray-300 flex items-center gap-4">
              <h1 className="text-xl font-bold text-gray-800">d/place</h1>
-             
              {cooldown > 0 ? (
                  <div className="bg-red-500 text-white font-mono font-bold px-2 py-0.5 rounded text-sm animate-pulse">
                     {cooldown}s
@@ -137,7 +150,8 @@ export default function PlaceGame() {
       {/* ÁREA DE JUEGO */}
       <div className="flex-1 w-full h-full relative">
         <TransformWrapper
-            initialScale={0.4} // Un poco más pequeño para asegurar que quepa en celular al inicio
+            ref={transformRef}
+            initialScale={1}
             minScale={0.1}
             maxScale={40}
             centerOnInit={true}
@@ -145,12 +159,15 @@ export default function PlaceGame() {
             doubleClick={{ disabled: true }}
             limitToBounds={false} 
         >
-            {({ zoomIn, zoomOut, resetTransform, centerView }) => (
+            {({ zoomIn, zoomOut, centerView }) => (
             <>
                 <div className="hidden md:flex absolute bottom-32 right-6 flex-col gap-2 z-40">
                     <button onClick={() => zoomIn()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">+</button>
                     <button onClick={() => zoomOut()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">-</button>
-                    <button onClick={() => centerView(0.4)} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs">↺</button>
+                    <button 
+                        onClick={() => centerView(window.innerWidth > 768 ? 1 : 0.4)} 
+                        className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs"
+                    >↺</button>
                 </div>
 
                 <TransformComponent
@@ -158,8 +175,6 @@ export default function PlaceGame() {
                     contentStyle={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}
                 >
                     <div 
-                        // 👇👇 AQUÍ ESTÁ EL FIX: 'shrink-0' 👇👇
-                        // Esto le prohíbe al navegador aplastar el div aunque la pantalla sea pequeña.
                         className="relative bg-white shadow-2xl origin-center shrink-0"
                         style={{ width: `${BASE_SIZE}px`, height: `${BASE_SIZE}px` }}
                         onMouseLeave={() => setHoverPos(null)}
@@ -198,11 +213,14 @@ export default function PlaceGame() {
         </TransformWrapper>
       </div>
 
-      {/* PALETA DE COLORES */}
+      {/* 🛠️ FIX CELULAR:
+          Usamos 'fixed bottom-0' para que se pegue SIEMPRE al borde inferior de la ventana visible.
+          'pb-safe' (opcional en Tailwind moderno) ayuda con el botón de inicio de iPhone.
+      */}
       <div className="
-            bg-white z-50 
-            w-full border-t border-gray-300 p-3 pb-6 shrink-0 shadow-lg
-            md:absolute md:bottom-8 md:w-auto md:left-1/2 md:-translate-x-1/2 md:rounded-2xl md:border md:pb-3
+            fixed bottom-0 left-0 right-0 z-50 
+            bg-white border-t border-gray-300 p-3 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]
+            md:absolute md:bottom-8 md:w-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:rounded-2xl md:border md:pb-3
       ">
         <p className="text-xs text-gray-400 text-center mb-2 font-mono uppercase tracking-widest">
             {loading ? 'Enviando...' : 'Selecciona Color'}
