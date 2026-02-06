@@ -5,16 +5,14 @@ import { supabase } from '@/lib/supabase';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 const GRID_SIZE = 250; 
-const BASE_SIZE = 800;
+const BASE_SIZE = 1000;
 const COLORS = ['#FF4500', '#FFA800', '#FFD635', '#00A368', '#7EED56', '#2450A4', '#3690EA', '#51E9F4', '#811E9F', '#B44AC0', '#FF99AA', '#9C6926', '#000000', '#898D90', '#D4D7D9', '#FFFFFF'];
 
 export default function PlaceGame() {
   const [pixels, setPixels] = useState({});
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [loading, setLoading] = useState(false);
-  
-  // ⏱️ ESTADO DEL CONTADOR
-  const [cooldown, setCooldown] = useState(0); // Segundos restantes
+  const [cooldown, setCooldown] = useState(0);
 
   const canvasRef = useRef(null);
   const [hoverPos, setHoverPos] = useState(null);
@@ -45,17 +43,10 @@ export default function PlaceGame() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // 2. RELOJ TIC-TAC (Countdown) ⏰
+  // 2. RELOJ TIC-TAC
   useEffect(() => {
     if (cooldown <= 0) return;
-
-    const interval = setInterval(() => {
-        setCooldown((prev) => {
-            if (prev <= 1) return 0;
-            return prev - 1;
-        });
-    }, 1000);
-
+    const interval = setInterval(() => setCooldown(p => p <= 1 ? 0 : p - 1), 1000);
     return () => clearInterval(interval);
   }, [cooldown]);
 
@@ -73,19 +64,13 @@ export default function PlaceGame() {
     });
   }, [pixels]);
 
-  // 4. FUNCIÓN PARA ACTIVAR EL TEMPORIZADOR
   const startTimer = (targetISODate) => {
-    const end = new Date(targetISODate).getTime();
-    const now = new Date().getTime();
-    const secondsLeft = Math.ceil((end - now) / 1000);
+    const secondsLeft = Math.ceil((new Date(targetISODate).getTime() - new Date().getTime()) / 1000);
     if (secondsLeft > 0) setCooldown(secondsLeft);
   };
 
-  // 5. ENVIAR CAMBIOS
   const paintPixel = async (x, y) => {
-    // Si hay cooldown, no hacemos nada (ni llamamos a la API)
     if (cooldown > 0) return; 
-    
     if (loading) return;
     setLoading(true);
 
@@ -96,12 +81,7 @@ export default function PlaceGame() {
     });
 
     const data = await res.json();
-    
-    // Si pintamos bien O si nos dio error de tiempo: Activamos el reloj
-    if (data.cooldownEnd) {
-        startTimer(data.cooldownEnd);
-    }
-    
+    if (data.cooldownEnd) startTimer(data.cooldownEnd);
     setLoading(false);
   };
 
@@ -121,109 +101,129 @@ export default function PlaceGame() {
     }
   };
 
-  const handleMouseDown = (e) => { dragStartPos.current = { x: e.clientX, y: e.clientY }; };
+  const handleMouseDown = (e) => { 
+      dragStartPos.current = { x: e.clientX, y: e.clientY }; 
+  };
 
   const handleMouseUp = (e) => {
     const moveX = Math.abs(e.clientX - dragStartPos.current.x);
     const moveY = Math.abs(e.clientY - dragStartPos.current.y);
-    if (moveX < 5 && moveY < 5) {
+    if (moveX < 10 && moveY < 10) {
         if (hoverPos) paintPixel(hoverPos.x, hoverPos.y);
     }
   };
 
   return (
-    <div className="h-screen w-full flex flex-col items-center bg-[#d9d4d7] relative overflow-hidden">
+    // ⚠️ CAMBIO CRÍTICO AQUÍ 👇
+    // 1. Quitamos 'fixed inset-0'.
+    // 2. Usamos 'w-full h-[calc(100vh-20px)]' (o h-screen) para llenar SOLO el espacio del contenido.
+    // 3. 'relative' asegura que los elementos 'absolute' de adentro (botones, paleta) se queden dentro de este cuadro.
+    <div className="relative w-full h-[calc(100vh)] flex flex-col bg-[#d9d4d7] touch-none overflow-hidden">
       
       {/* HEADER FLOTANTE */}
-      <div className="absolute top-4 z-50 flex flex-col items-center pointer-events-none">
-        <div className="bg-white/90 backdrop-blur px-6 py-3 rounded-xl shadow-lg pointer-events-auto border border-gray-300 transition-all">
-           
-           <div className="flex items-center gap-3 justify-center">
-             <h1 className="text-2xl font-bold text-gray-800 text-center">d/place</h1>
+      <div className="absolute top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
+        <div className="bg-white/90 backdrop-blur px-5 py-2 rounded-full shadow-lg pointer-events-auto border border-gray-300 flex items-center gap-4">
+             <h1 className="text-xl font-bold text-gray-800">d/place</h1>
              
-             {/* ⏳ EL CONTADOR VISUAL ⏳ */}
              {cooldown > 0 ? (
-                 <div className="bg-red-500 text-white font-mono font-bold px-3 py-1 rounded-md animate-pulse">
+                 <div className="bg-red-500 text-white font-mono font-bold px-2 py-0.5 rounded text-sm animate-pulse">
                     {cooldown}s
                  </div>
              ) : (
-                 <div className="bg-green-500 text-white font-bold px-3 py-1 rounded-md text-xs uppercase tracking-wider">
+                 <div className="bg-green-500 text-white font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
                     Listo
                  </div>
              )}
-           </div>
-           
-           <div className={`flex gap-1 mt-2 flex-wrap justify-center max-w-md transition-opacity ${cooldown > 0 ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`}>
+        </div>
+      </div>
+
+      {/* ÁREA DE JUEGO */}
+      <div className="flex-1 w-full h-full relative">
+        <TransformWrapper
+            initialScale={0.5} // Empezamos más lejos para ver todo el mapa
+            minScale={0.1}
+            maxScale={40}      // ⬅️ AUMENTAMOS ZOOM (Antes 25, ahora 40 para ver bien los pixels pequeños)
+            centerOnInit={true}
+            wheel={{ step: 0.2 }}
+            doubleClick={{ disabled: true }}
+        >
+            {({ zoomIn, zoomOut, resetTransform }) => (
+            <>
+                {/* Botones Zoom */}
+                <div className="hidden md:flex absolute bottom-32 right-6 flex-col gap-2 z-40">
+                    <button onClick={() => zoomIn()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">+</button>
+                    <button onClick={() => zoomOut()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">-</button>
+                    <button onClick={() => resetTransform()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs">↺</button>
+                </div>
+
+                <TransformComponent
+                    wrapperStyle={{ width: "100%", height: "100%" }}
+                    // 👇 AQUÍ ESTÁ EL CAMBIO MÁGICO 👇
+                    // Agregamos display: flex, justify-center, align-items-center
+                    // Esto fuerza al contenido (el div blanco de 800px) a estar siempre en el centro
+                    contentStyle={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}
+                >
+                    <div 
+                        className="relative bg-white shadow-2xl origin-center"
+                        style={{ width: `${BASE_SIZE}px`, height: `${BASE_SIZE}px` }}
+                        onMouseLeave={() => setHoverPos(null)}
+                    >
+                        <canvas
+                            ref={canvasRef}
+                            width={GRID_SIZE}
+                            height={GRID_SIZE}
+                            className={`w-full h-full ${cooldown > 0 ? 'cursor-not-allowed' : 'cursor-crosshair'}`}
+                            style={{ imageRendering: 'pixelated' }}
+                            onMouseMove={handleMouseMove}
+                            onMouseDown={handleMouseDown}
+                            onMouseUp={handleMouseUp}
+                            onTouchStart={(e) => handleMouseDown(e.touches[0])}
+                            onTouchEnd={(e) => handleMouseUp(e.changedTouches[0])}
+                        />
+
+                        {hoverPos && (
+                            <div 
+                                className="absolute pointer-events-none border-2 border-white/90 shadow-sm z-10 mix-blend-difference"
+                                style={{
+                                    width: `${BASE_SIZE / GRID_SIZE}px`,
+                                    height: `${BASE_SIZE / GRID_SIZE}px`,
+                                    left: `${(hoverPos.x * (BASE_SIZE / GRID_SIZE))}px`,
+                                    top: `${(hoverPos.y * (BASE_SIZE / GRID_SIZE))}px`,
+                                    backgroundColor: cooldown > 0 ? 'transparent' : selectedColor,
+                                    borderColor: cooldown > 0 ? 'red' : 'white',
+                                    opacity: 0.6
+                                }}
+                            />
+                        )}
+                    </div>
+                </TransformComponent>
+            </>
+            )}
+        </TransformWrapper>
+      </div>
+
+      {/* PALETA DE COLORES RESPONSIVA */}
+      <div className="
+            bg-white z-50 
+            w-full border-t border-gray-300 p-3 pb-6 shrink-0 shadow-lg
+            md:absolute md:bottom-8 md:w-auto md:left-1/2 md:-translate-x-1/2 md:rounded-2xl md:border md:pb-3
+      ">
+        <p className="text-xs text-gray-400 text-center mb-2 font-mono uppercase tracking-widest">
+            {loading ? 'Enviando...' : 'Selecciona Color'}
+        </p>
+        
+        <div className="flex gap-2 overflow-x-auto pb-1 px-1 no-scrollbar justify-start md:justify-center">
             {COLORS.map(c => (
               <button
                 key={c}
                 onClick={() => setSelectedColor(c)}
-                className={`w-6 h-6 rounded-full border-2 transition hover:scale-110 ${selectedColor === c ? 'border-black scale-125 shadow-md' : 'border-transparent'}`}
+                className={`w-9 h-9 rounded-full border-2 shrink-0 transition-all hover:scale-110 ${selectedColor === c ? 'border-gray-800 scale-110 shadow-md ring-2 ring-gray-300' : 'border-transparent'}`}
                 style={{ backgroundColor: c }}
               />
             ))}
-          </div>
-          <p className="text-xs text-gray-500 text-center mt-2 font-mono">
-             {loading ? '⏳...' : `(${hoverPos ? `${hoverPos.x}, ${hoverPos.y}` : '- , -'})`}
-          </p>
         </div>
       </div>
 
-      <TransformWrapper
-        initialScale={1}
-        minScale={0.5}
-        maxScale={20}
-        centerOnInit={true}
-        wheel={{ step: 0.2 }}
-        doubleClick={{ disabled: true }}
-      >
-        {({ zoomIn, zoomOut, resetTransform }) => (
-          <>
-            <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-50">
-                <button onClick={() => zoomIn()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">+</button>
-                <button onClick={() => zoomOut()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">-</button>
-                <button onClick={() => resetTransform()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs">Reset</button>
-            </div>
-
-            <TransformComponent
-                wrapperStyle={{ width: "100%", height: "100%" }}
-                contentStyle={{ width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}
-            >
-                <div 
-                    className="relative bg-white shadow-2xl"
-                    style={{ width: `${BASE_SIZE}px`, height: `${BASE_SIZE}px` }}
-                    onMouseLeave={() => setHoverPos(null)}
-                >
-                    <canvas
-                        ref={canvasRef}
-                        width={GRID_SIZE}
-                        height={GRID_SIZE}
-                        className={`w-full h-full ${cooldown > 0 ? 'cursor-not-allowed' : 'cursor-crosshair'}`}
-                        style={{ imageRendering: 'pixelated' }}
-                        onMouseMove={handleMouseMove}
-                        onMouseDown={handleMouseDown}
-                        onMouseUp={handleMouseUp}
-                    />
-
-                    {hoverPos && (
-                        <div 
-                            className="absolute pointer-events-none border-2 border-white/90 shadow-sm z-10 mix-blend-difference"
-                            style={{
-                                width: `${BASE_SIZE / GRID_SIZE}px`,
-                                height: `${BASE_SIZE / GRID_SIZE}px`,
-                                left: `${(hoverPos.x * (BASE_SIZE / GRID_SIZE))}px`,
-                                top: `${(hoverPos.y * (BASE_SIZE / GRID_SIZE))}px`,
-                                backgroundColor: cooldown > 0 ? 'transparent' : selectedColor, // No mostrar color si hay cooldown
-                                borderColor: cooldown > 0 ? 'red' : 'white', // Borde rojo si hay cooldown
-                                opacity: 0.6
-                            }}
-                        />
-                    )}
-                </div>
-            </TransformComponent>
-          </>
-        )}
-      </TransformWrapper>
     </div>
   );
 }
