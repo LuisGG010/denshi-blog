@@ -114,11 +114,8 @@ export default function PlaceGame() {
   };
 
   return (
-    // ⚠️ CAMBIO CRÍTICO AQUÍ 👇
-    // 1. Quitamos 'fixed inset-0'.
-    // 2. Usamos 'w-full h-[calc(100vh-20px)]' (o h-screen) para llenar SOLO el espacio del contenido.
-    // 3. 'relative' asegura que los elementos 'absolute' de adentro (botones, paleta) se queden dentro de este cuadro.
-    <div className="relative w-full h-[calc(100vh)] flex flex-col bg-[#d9d4d7] touch-none overflow-hidden">
+    // ⚠️ RECUPERÉ 'md:ml-64' QUE SE HABÍA PERDIDO
+    <div className="relative h-screen flex flex-col bg-[#d9d4d7] touch-none overflow-hidden md:ml-64">
       
       {/* HEADER FLOTANTE */}
       <div className="absolute top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
@@ -140,15 +137,12 @@ export default function PlaceGame() {
       {/* ÁREA DE JUEGO */}
       <div className="flex-1 w-full h-full relative">
         <TransformWrapper
-            initialScale={0.5}
+            initialScale={0.4} // Un poco más pequeño para asegurar que quepa en celular al inicio
             minScale={0.1}
             maxScale={40}
             centerOnInit={true}
             wheel={{ step: 0.2 }}
             doubleClick={{ disabled: true }}
-            // 👇 LA SOLUCIÓN MÁGICA 👇
-            // Esto permite mover el mapa libremente, incluso "fuera" de la pantalla.
-            // Así puedes traer los bordes al centro cómodamente.
             limitToBounds={false} 
         >
             {({ zoomIn, zoomOut, resetTransform, centerView }) => (
@@ -156,11 +150,7 @@ export default function PlaceGame() {
                 <div className="hidden md:flex absolute bottom-32 right-6 flex-col gap-2 z-40">
                     <button onClick={() => zoomIn()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">+</button>
                     <button onClick={() => zoomOut()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">-</button>
-                    
-                    {/* 👇 BOTÓN CORREGIDO: Usamos centerView(0.5) 👇 
-                        El 0.5 es el zoom al que quieres que regrese (igual que tu initialScale)
-                    */}
-                    <button onClick={() => centerView(0.5)} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs">↺</button>
+                    <button onClick={() => centerView(0.4)} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs">↺</button>
                 </div>
 
                 <TransformComponent
@@ -168,7 +158,9 @@ export default function PlaceGame() {
                     contentStyle={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}
                 >
                     <div 
-                        className="relative bg-white shadow-2xl origin-center"
+                        // 👇👇 AQUÍ ESTÁ EL FIX: 'shrink-0' 👇👇
+                        // Esto le prohíbe al navegador aplastar el div aunque la pantalla sea pequeña.
+                        className="relative bg-white shadow-2xl origin-center shrink-0"
                         style={{ width: `${BASE_SIZE}px`, height: `${BASE_SIZE}px` }}
                         onMouseLeave={() => setHoverPos(null)}
                     >
@@ -206,7 +198,7 @@ export default function PlaceGame() {
         </TransformWrapper>
       </div>
 
-      {/* PALETA DE COLORES RESPONSIVA */}
+      {/* PALETA DE COLORES */}
       <div className="
             bg-white z-50 
             w-full border-t border-gray-300 p-3 pb-6 shrink-0 shadow-lg
