@@ -17,6 +17,13 @@ export default function MinigamesPage() {
             <p className="text-gray-400">Un juego clicker de toda la vida, para vicio.</p>
           </Link>
 
+          {/* JUEGO 2: D/PLACE */}
+          <Link href="/minigames/place" className="group bg-gray-900/50 backdrop-blur-sm border border-gray-700 p-8 rounded-3xl hover:bg-gray-800 hover:border-yellow-500 transition shadow-lg hover:scale-105 hover:shadow-yellow-500/20">
+            <div className="text-6xl mb-4 transform group-hover:scale-110 transition">🎨</div>
+            <h2 className="text-3xl font-bold text-white mb-2">Denshi Place</h2>
+            <p className="text-gray-400">Un lienzo donde poder pintar pixeles.</p>
+          </Link>
+
           {/* JUEGO 2: PRÓXIMAMENTE */}
           <div className="opacity-60 border border-gray-800 p-8 rounded-3xl border-dashed flex flex-col items-center justify-center bg-black/20 cursor-not-allowed">
             <div className="text-6xl mb-4 grayscale">❓</div>
