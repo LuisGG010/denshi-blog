@@ -9,7 +9,7 @@ export async function POST(request) {
   try {
     const cookieStore = cookies()
 
-    // 1. SEGURIDAD: Verificar quién eres
+    // 1. SEGURIDAD
     const supabaseAuth = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -28,34 +28,51 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. ACTIVAR MODO DIOS
+    // 2. MODO DIOS ACTIVADO
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
     const body = await request.json()
-    const { action, id, data } = body // 'data' trae titulo, contenido, etc.
+    const { action, id, data } = body
 
-    // --- CASO 1: BORRAR ---
+    // ==========================================
+    // 🤖 LISTA DE COMANDOS DEL ROBOT
+    // ==========================================
+
+    // 1. BORRAR POST
     if (action === 'delete_post') {
         const { error } = await supabaseAdmin.from('posts').delete().eq('id', id)
         if (error) throw error
         return NextResponse.json({ success: true })
     }
 
-    // --- CASO 2: CREAR (¡ESTO ES LO NUEVO!) ---
+    // 2. CREAR POST
     if (action === 'create_post') {
-        // Tu formulario envía: title, content, image_url, color
         const { title, content, image_url, color } = data;
-
         const { error } = await supabaseAdmin.from('posts').insert({
-            title,
-            content,
-            image_url,
-            accent_color: color, // ⚠️ OJO: Verifica si en tu DB la columna se llama 'color' o 'accent_color'. Puse 'accent_color' porque es común, si falla, cámbialo a 'color'.
+            title, content, image_url, accent_color: color
         })
+        if (error) throw error
+        return NextResponse.json({ success: true })
+    }
 
+    // 3. ACTUALIZAR POST (EDITAR)
+    if (action === 'update_post') {
+        const { title, content, image_url, color } = data;
+        const { error } = await supabaseAdmin.from('posts').update({
+            title, content, image_url, accent_color: color,
+            updated_at: new Date().toISOString() // Actualizamos la fecha
+        }).eq('id', id)
+        
+        if (error) throw error
+        return NextResponse.json({ success: true })
+    }
+
+    // 4. BORRAR COMENTARIO (MODERACIÓN)
+    if (action === 'delete_comment') {
+        const { error } = await supabaseAdmin.from('comments').delete().eq('id', id)
         if (error) throw error
         return NextResponse.json({ success: true })
     }
