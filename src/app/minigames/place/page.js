@@ -12,11 +12,14 @@ export default function PlaceGame() {
   const [pixels, setPixels] = useState({});
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [loading, setLoading] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
+  
+  // 🔫 SISTEMA DE MUNICIÓN
+  const [ammo, setAmmo] = useState(3); // Empezamos asumiendo que tiene 3
+  const [nextRefillTime, setNextRefillTime] = useState(null);
+  const [secondsLeft, setSecondsLeft] = useState(0);
 
   const canvasRef = useRef(null);
   const transformRef = useRef(null);
-  
   const [hoverPos, setHoverPos] = useState(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
 
@@ -56,12 +59,40 @@ export default function PlaceGame() {
     }, 100);
   }, []);
 
-  // 3. RELOJ TIC-TAC
+  // 3. RELOJ INTELIGENTE DE RECARGA 🔋
   useEffect(() => {
-    if (cooldown <= 0) return;
-    const interval = setInterval(() => setCooldown(p => p <= 1 ? 0 : p - 1), 1000);
+    // Si tenemos los 3 puntos, no hay cuenta regresiva
+    if (ammo >= 3) {
+        setSecondsLeft(0);
+        return;
+    }
+
+    const interval = setInterval(() => {
+        if (!nextRefillTime) return;
+        
+        const now = new Date().getTime();
+        const target = new Date(nextRefillTime).getTime();
+        const diff = Math.ceil((target - now) / 1000);
+
+        if (diff <= 0) {
+            // ¡Se recargó un punto!
+            setAmmo(prev => Math.min(3, prev + 1));
+            // Si aun faltan puntos por llenar, reiniciamos el ciclo de 30s virtualmente
+            // (La API corregirá el tiempo exacto en el próximo click, esto es visual)
+            if (ammo < 2) { 
+                const newTarget = new Date(now + 30000).toISOString();
+                setNextRefillTime(newTarget);
+            } else {
+                setNextRefillTime(null);
+            }
+        } else {
+            setSecondsLeft(diff);
+        }
+    }, 1000);
+
     return () => clearInterval(interval);
-  }, [cooldown]);
+  }, [ammo, nextRefillTime]);
+
 
   // 4. DIBUJAR CANVAS
   useEffect(() => {
@@ -77,14 +108,13 @@ export default function PlaceGame() {
     });
   }, [pixels]);
 
-  const startTimer = (targetISODate) => {
-    const secondsLeft = Math.ceil((new Date(targetISODate).getTime() - new Date().getTime()) / 1000);
-    if (secondsLeft > 0) setCooldown(secondsLeft);
-  };
-
+  // 5. FUNCIÓN DE PINTAR
   const paintPixel = async (x, y) => {
-    if (cooldown > 0) return; 
+    if (ammo <= 0) return; // Si no hay balas, no dispara
     if (loading) return;
+    
+    // Optimistic Update: Restamos visualmente 1 punto inmediatamente
+    setAmmo(prev => prev - 1);
     setLoading(true);
 
     const res = await fetch('/api/place/paint', {
@@ -94,10 +124,23 @@ export default function PlaceGame() {
     });
 
     const data = await res.json();
-    if (data.cooldownEnd) startTimer(data.cooldownEnd);
+    
+    if (res.ok) {
+        // La API nos confirma cuántas balas quedan y cuándo llega la próxima
+        setAmmo(data.balance);
+        if (data.nextRefill) {
+            setNextRefillTime(data.nextRefill);
+        }
+    } else {
+        // Si falló (ej: hack), corregimos
+        if (data.balance !== undefined) setAmmo(data.balance);
+        alert(data.error || "Error al pintar");
+    }
+    
     setLoading(false);
   };
 
+  // HANDLERS (Igual que antes)
   const handleMouseMove = (e) => {
     const rect = e.target.getBoundingClientRect();
     const scaleX = GRID_SIZE / rect.width;
@@ -113,41 +156,48 @@ export default function PlaceGame() {
         }
     }
   };
-
-  const handleMouseDown = (e) => { 
-      dragStartPos.current = { x: e.clientX, y: e.clientY }; 
-  };
-
+  const handleMouseDown = (e) => { dragStartPos.current = { x: e.clientX, y: e.clientY }; };
   const handleMouseUp = (e) => {
     const moveX = Math.abs(e.clientX - dragStartPos.current.x);
     const moveY = Math.abs(e.clientY - dragStartPos.current.y);
-    if (moveX < 10 && moveY < 10) {
-        if (hoverPos) paintPixel(hoverPos.x, hoverPos.y);
-    }
+    if (moveX < 10 && moveY < 10 && hoverPos) paintPixel(hoverPos.x, hoverPos.y);
   };
 
   return (
-    // 🛠️ FIX PC: Volvemos a 'fixed inset-0' para llenar toda la pantalla real.
-    // Quitamos 'md:ml-64' para eliminar el espacio vacío a la izquierda.
     <div className="fixed inset-0 flex flex-col bg-[#d9d4d7] touch-none overflow-hidden z-0">
       
-      {/* HEADER */}
+      {/* HEADER CON NUEVO INDICADOR DE MUNICIÓN */}
       <div className="absolute top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <div className="bg-white/90 backdrop-blur px-5 py-2 rounded-full shadow-lg pointer-events-auto border border-gray-300 flex items-center gap-4">
-             <h1 className="text-xl font-bold text-gray-800">d/place</h1>
-             {cooldown > 0 ? (
-                 <div className="bg-red-500 text-white font-mono font-bold px-2 py-0.5 rounded text-sm animate-pulse">
-                    {cooldown}s
-                 </div>
-             ) : (
-                 <div className="bg-green-500 text-white font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
-                    Listo
-                 </div>
-             )}
+             <h1 className="text-xl font-bold text-gray-800 hidden sm:block">d/place</h1>
+             
+             {/* 🔋 UI DE PUNTOS */}
+             <div className="flex items-center gap-2">
+                {/* 3 Cuadritos */}
+                <div className="flex gap-1">
+                    {[1, 2, 3].map(i => (
+                        <div 
+                            key={i} 
+                            className={`w-4 h-6 rounded-sm border transition-all ${
+                                i <= ammo 
+                                ? 'bg-green-500 border-green-600 shadow-[0_0_8px_rgba(34,197,94,0.6)]' // Lleno
+                                : 'bg-gray-200 border-gray-300' // Vacío
+                            }`}
+                        />
+                    ))}
+                </div>
+                
+                {/* Texto de tiempo si está cargando */}
+                {ammo < 3 && (
+                    <span className="text-xs font-mono font-bold text-gray-500 w-12 text-right">
+                        {secondsLeft > 0 ? `+${secondsLeft}s` : '...'}
+                    </span>
+                )}
+             </div>
         </div>
       </div>
 
-      {/* ÁREA DE JUEGO */}
+      {/* ÁREA DE JUEGO (Igual que antes) */}
       <div className="flex-1 w-full h-full relative">
         <TransformWrapper
             ref={transformRef}
@@ -164,10 +214,7 @@ export default function PlaceGame() {
                 <div className="hidden md:flex absolute bottom-32 right-6 flex-col gap-2 z-40">
                     <button onClick={() => zoomIn()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">+</button>
                     <button onClick={() => zoomOut()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">-</button>
-                    <button 
-                        onClick={() => centerView(window.innerWidth > 768 ? 1 : 0.4)} 
-                        className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs"
-                    >↺</button>
+                    <button onClick={() => centerView(window.innerWidth > 768 ? 1 : 0.4)} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs">↺</button>
                 </div>
 
                 <TransformComponent
@@ -183,7 +230,7 @@ export default function PlaceGame() {
                             ref={canvasRef}
                             width={GRID_SIZE}
                             height={GRID_SIZE}
-                            className={`w-full h-full ${cooldown > 0 ? 'cursor-not-allowed' : 'cursor-crosshair'}`}
+                            className={`w-full h-full ${ammo <= 0 ? 'cursor-not-allowed' : 'cursor-crosshair'}`}
                             style={{ imageRendering: 'pixelated' }}
                             onMouseMove={handleMouseMove}
                             onMouseDown={handleMouseDown}
@@ -191,7 +238,7 @@ export default function PlaceGame() {
                             onTouchStart={(e) => handleMouseDown(e.touches[0])}
                             onTouchEnd={(e) => handleMouseUp(e.changedTouches[0])}
                         />
-
+                        {/* Cursor Fantasma */}
                         {hoverPos && (
                             <div 
                                 className="absolute pointer-events-none border-2 border-white/90 shadow-sm z-10 mix-blend-difference"
@@ -200,8 +247,8 @@ export default function PlaceGame() {
                                     height: `${BASE_SIZE / GRID_SIZE}px`,
                                     left: `${(hoverPos.x * (BASE_SIZE / GRID_SIZE))}px`,
                                     top: `${(hoverPos.y * (BASE_SIZE / GRID_SIZE))}px`,
-                                    backgroundColor: cooldown > 0 ? 'transparent' : selectedColor,
-                                    borderColor: cooldown > 0 ? 'red' : 'white',
+                                    backgroundColor: ammo <= 0 ? 'transparent' : selectedColor,
+                                    borderColor: ammo <= 0 ? 'red' : 'white',
                                     opacity: 0.6
                                 }}
                             />
@@ -213,19 +260,11 @@ export default function PlaceGame() {
         </TransformWrapper>
       </div>
 
-      {/* 🛠️ FIX CELULAR:
-          Usamos 'fixed bottom-0' para que se pegue SIEMPRE al borde inferior de la ventana visible.
-          'pb-safe' (opcional en Tailwind moderno) ayuda con el botón de inicio de iPhone.
-      */}
-      <div className="
-            fixed bottom-0 left-0 right-0 z-50 
-            bg-white border-t border-gray-300 p-3 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]
-            md:absolute md:bottom-8 md:w-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:rounded-2xl md:border md:pb-3
-      ">
+      {/* PALETA DE COLORES (Igual que antes) */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-300 p-3 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:absolute md:bottom-8 md:w-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:rounded-2xl md:border md:pb-3">
         <p className="text-xs text-gray-400 text-center mb-2 font-mono uppercase tracking-widest">
-            {loading ? 'Enviando...' : 'Selecciona Color'}
+            {loading ? 'Pintando...' : (ammo > 0 ? 'Selecciona Color' : 'Recargando...')}
         </p>
-        
         <div className="flex gap-2 overflow-x-auto pb-1 px-1 no-scrollbar justify-start md:justify-center">
             {COLORS.map(c => (
               <button
@@ -237,7 +276,6 @@ export default function PlaceGame() {
             ))}
         </div>
       </div>
-
     </div>
   );
 }
