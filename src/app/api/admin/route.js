@@ -41,12 +41,17 @@ export async function POST(request) {
     )
 
     const body = await request.json()
-    const { action, id, data } = body
+    const { action, id } = body // No necesitas 'data' para borrar
 
-    // ... TU LÓGICA DE SIEMPRE ...
-    if (action === 'delete') {
+    // 👇 CORRECCIÓN: Usamos el mismo nombre que envía el AdminList ('delete_post')
+    if (action === 'delete_post') {
         const { error } = await supabaseAdmin.from('posts').delete().eq('id', id)
-        if (error) throw error
+        
+        if (error) {
+            console.error("Error borrando:", error)
+            return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+        
         return NextResponse.json({ success: true })
     }
     
