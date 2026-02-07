@@ -1,19 +1,20 @@
 'use client'
 import { useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
+// 👇 AQUÍ EL CAMBIO: Usamos tu cliente que ya funciona
+import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClientComponentClient()
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
 
+    // Login usando tu configuración existente
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -23,7 +24,7 @@ export default function LoginPage() {
       alert('Error: ' + error.message)
       setLoading(false)
     } else {
-      // Si entra, lo mandamos al admin
+      // Al loguearte, Supabase guarda una cookie automáticamente
       router.push('/admin')
       router.refresh()
     }
