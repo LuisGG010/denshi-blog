@@ -1,15 +1,15 @@
 import { supabase } from "@/lib/supabase";
 
 export default async function sitemap() {
-  // 1. URL BASE (Tu dominio real)
+  // 1. URL BASE
   const baseUrl = 'https://denshi-blog.vercel.app'; 
 
   // 2. Obtener los posts dinámicos de la DB
+  // (Esto ayuda a que tus artículos nuevos aparezcan rápido en Google)
   const { data: posts } = await supabase
     .from('posts')
     .select('id, updated_at');
 
-  // Mapeamos los posts dinámicos
   const postUrls = posts?.map((post) => ({
     url: `${baseUrl}/blog/${post.id}`,
     lastModified: new Date(post.updated_at),
@@ -17,51 +17,58 @@ export default async function sitemap() {
     priority: 0.7,
   })) ?? [];
 
-  // 3. Rutas Estáticas (Basadas en tu estructura de carpetas)
+  // 3. Rutas Estáticas
   const staticRoutes = [
     {
       url: baseUrl, // Home
-      changeFrequency: 'yearly',
+      changeFrequency: 'daily',
       priority: 1,
     },
     {
-      url: `${baseUrl}/about`, // Sobre Mí [cite: 120]
+      url: `${baseUrl}/about`, // Sobre Mí
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/blog`, // Lista de Blogs [cite: 130]
+      url: `${baseUrl}/blog`, // Lista de Blogs
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/social`, // Redes Sociales [cite: 143]
+      url: `${baseUrl}/social`, // Redes Sociales
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/minigames`, // Menú Arcade (Ojo: carpeta 'minigames' )
-      changeFrequency: 'monthly',
+      url: `${baseUrl}/minigames`, // Menú Arcade
+      changeFrequency: 'weekly',
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/minigames/clicker`, // El juego específico [cite: 140]
-      changeFrequency: 'yearly',
+      url: `${baseUrl}/minigames/clicker`, // Cookie Clicker
+      changeFrequency: 'weekly', // Cambia semanalmente si actualizas el ranking/mejoras
       priority: 0.6,
     },
+    // --- NUEVO JUEGO AGREGADO ---
     {
-      url: `${baseUrl}/credits`, // Créditos [cite: 135]
+      url: `${baseUrl}/minigames/place`, // d/place (Pixel Art)
+      changeFrequency: 'hourly', // ¡Cambia muy seguido!
+      priority: 0.8,
+    },
+    // ----------------------------
+    {
+      url: `${baseUrl}/credits`, // Créditos
       changeFrequency: 'yearly',
       priority: 0.5,
     },
     {
-      url: `${baseUrl}/login`, // Login (Público para que sepan que existe, o puedes quitarlo) [cite: 137]
+      url: `${baseUrl}/login`, // Login
       changeFrequency: 'yearly',
-      priority: 0.5,
+      priority: 0.4,
     },
   ];
 
-  // 4. Unimos todo y agregamos la fecha actual
+  // 4. Unimos todo
   return [
     ...staticRoutes.map(route => ({
       ...route,

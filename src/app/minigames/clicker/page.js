@@ -1,17 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
 export default function CookieClickerGame() {
-  // --- ESTADOS DEL JUEGO ---
+  // --- ESTADOS ---
   const [cookies, setCookies] = useState(0);
-  const [cps, setCps] = useState(0); // Cookies por Segundo
-  const [clickPower, setClickPower] = useState(1);
-  const [loaded, setLoaded] = useState(false); // Para evitar errores de hidratación
+  const [cps, setCps] = useState(0); 
+  const [loaded, setLoaded] = useState(false);
+  
+  // Estado de la Nube ☁️
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
-  // --- TIENDA DE MEJORAS ---
-  // id: identificador, name: nombre, baseCost: costo inicial, cps: cuánto produce, count: cuántos tienes, icon: emoji
+  // --- TIENDA (Tus items originales) ---
   const [items, setItems] = useState([
     { id: 1, name: 'Cursor Reforzado', baseCost: 15, cps: 0.1, count: 0, icon: '👆' },
     { id: 2, name: 'Abuelita', baseCost: 100, cps: 1, count: 0, icon: '👵' },
@@ -20,52 +22,119 @@ export default function CookieClickerGame() {
     { id: 5, name: 'Fábrica', baseCost: 130000, cps: 260, count: 0, icon: '🏭' },
   ]);
 
-  // --- 1. CARGAR PARTIDA (Solo al inicio) ---
+  // Referencias para el reloj interno (DELTA TIME)
+  const lastTimeRef = useRef(null);
+  const requestRef = useRef(null);
+  // Referencia para guardar cookies sin depender del renderizado
+  const cookiesRef = useRef(0); 
+
+  // --- 1. CARGAR PARTIDA (Desde Supabase) ---
   useEffect(() => {
-    const savedData = localStorage.getItem('denshi-clicker-save');
-    if (savedData) {
-      const parsed = JSON.parse(savedData);
-      setCookies(parsed.cookies || 0);
-      setItems(parsed.items || items);
-      // Recalcular CPS basado en los items cargados
-      recalculateCPS(parsed.items || items);
-    }
-    setLoaded(true);
+    const loadGame = async () => {
+        try {
+            const res = await fetch('/api/clicker/save');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.saveData) {
+                    // Recuperamos cookies
+                    const savedCookies = data.saveData.cookies || 0;
+                    setCookies(savedCookies);
+                    cookiesRef.current = savedCookies;
+
+                    // Recuperamos items (fusionando con los originales por seguridad)
+                    const loadedItems = items.map(baseItem => {
+                        const savedItem = data.saveData.items.find(i => i.id === baseItem.id);
+                        return savedItem ? { ...baseItem, count: savedItem.count } : baseItem;
+                    });
+                    setItems(loadedItems);
+                    recalculateCPS(loadedItems);
+                }
+            }
+        } catch (error) {
+            console.error("Error cargando nube:", error);
+        } finally {
+            setLoaded(true);
+        }
+    };
+    loadGame();
   }, []);
 
-  // --- 2. GUARDADO AUTOMÁTICO (Cada vez que cambia algo importante) ---
-  useEffect(() => {
-    if (loaded) {
-      localStorage.setItem('denshi-clicker-save', JSON.stringify({
-        cookies,
-        items
-      }));
+  // --- 2. GAME LOOP (Matemáticas Precisas) ⏳ ---
+  const animate = (time) => {
+    if (lastTimeRef.current !== null && cps > 0) {
+      const now = Date.now();
+      // Calculamos segundos reales transcurridos (Delta Time)
+      const deltaSeconds = (now - lastTimeRef.current) / 1000;
+      
+      if (deltaSeconds > 0) {
+        // Producción: CPS * Segundos
+        const gained = cps * deltaSeconds;
+        
+        // Actualizamos referencia y estado
+        cookiesRef.current += gained;
+        setCookies(cookiesRef.current);
+      }
+      
+      lastTimeRef.current = now;
+    } else {
+        // Primer frame o reset
+        lastTimeRef.current = Date.now();
     }
-  }, [cookies, items, loaded]);
+    requestRef.current = requestAnimationFrame(animate);
+  };
 
-  // --- 3. GAME LOOP (El corazón del juego) ---
   useEffect(() => {
-    if (!loaded || cps === 0) return;
-
-    // Ejecutamos 10 veces por segundo para que se vea fluido
-    const interval = setInterval(() => {
-      setCookies((prev) => prev + (cps / 10));
-    }, 100);
-
-    return () => clearInterval(interval);
+    if (!loaded) return;
+    
+    // Iniciamos/Reiniciamos el loop cuando cambia el CPS o carga
+    lastTimeRef.current = Date.now();
+    requestRef.current = requestAnimationFrame(animate);
+    
+    return () => cancelAnimationFrame(requestRef.current);
   }, [cps, loaded]);
 
-  // --- LÓGICA ---
-  
+
+  // --- 3. AUTO-GUARDADO (Cada 10s) ☁️ ---
+  useEffect(() => {
+    if (!loaded) return;
+
+    const saveInterval = setInterval(async () => {
+        setIsSaving(true);
+        try {
+            await fetch('/api/clicker/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    cookies: cookiesRef.current, 
+                    items: items.map(i => ({ id: i.id, count: i.count })) 
+                })
+            });
+            setSaveMessage('Guardado en nube ✅');
+            setTimeout(() => setSaveMessage(''), 2000);
+        } catch (error) {
+            console.error("Error guardando:", error);
+        } finally {
+            setIsSaving(false);
+        }
+    }, 10000); // 10 segundos
+
+    return () => clearInterval(saveInterval);
+  }, [items, loaded]); // Dependencias para reiniciar si cambian items
+
+
+  // --- LÓGICA DE JUEGO ---
   const recalculateCPS = (currentItems) => {
     const newCps = currentItems.reduce((acc, item) => acc + (item.count * item.cps), 0);
     setCps(newCps);
   };
 
   const handleClick = () => {
-    setCookies(cookies + clickPower);
+    // Click manual
+    const amount = 1; // Puedes mejorarlo luego
+    cookiesRef.current += amount;
+    setCookies(cookiesRef.current);
     
-    // Pequeña animación visual (opcional, manipulando el DOM directamente para performance)
+    // Animación visual
     const btn = document.getElementById('big-cookie');
     if(btn) {
         btn.style.transform = 'scale(0.95)';
@@ -76,87 +145,80 @@ export default function CookieClickerGame() {
   const buyItem = (itemId) => {
     const itemIndex = items.findIndex(i => i.id === itemId);
     const item = items[itemIndex];
-    
-    // Fórmula de costo exponencial: CostoBase * (1.15 ^ Cantidad)
     const currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
 
-    if (cookies >= currentCost) {
+    if (cookiesRef.current >= currentCost) {
       const newItems = [...items];
       newItems[itemIndex].count += 1;
       
-      setCookies(cookies - currentCost);
+      // Restamos costo
+      cookiesRef.current -= currentCost;
+      setCookies(cookiesRef.current);
+      
       setItems(newItems);
       recalculateCPS(newItems);
     }
   };
 
-  const resetGame = () => {
-    if(confirm("¿Seguro que quieres borrar tu progreso?")) {
-        localStorage.removeItem('denshi-clicker-save');
+  const resetGame = async () => {
+    if(confirm("¿Borrar progreso de la nube?")) {
+        setCookies(0);
+        cookiesRef.current = 0;
+        setItems(items.map(i => ({...i, count: 0})));
+        setCps(0);
+        // Enviamos partida vacía para limpiar DB
+        await fetch('/api/clicker/save', {
+            method: 'POST',
+            body: JSON.stringify({ cookies: 0, items: [] })
+        });
         window.location.reload();
     }
   }
 
-  if (!loaded) return <div className="text-white text-center pt-20">Cargando partida...</div>;
+  if (!loaded) return <div className="min-h-screen bg-black text-green-500 flex items-center justify-center font-mono">Cargando Imperio...</div>;
 
   return (
-    <div className='min-h-screen bg-black/40'>
+    <div className='min-h-screen bg-black/40 font-sans text-white touch-none'>
       <div className="min-h-screen pt-20 pb-10 px-4 md:px-10 flex flex-col md:flex-row gap-8 max-w-7xl mx-auto">
         
         <Link href="/minigames" className="absolute top-24 left-6 text-gray-400 hover:text-white flex items-center gap-2 transition hover:-translate-x-1 font-bold bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm z-20">
           <span>&larr;</span> Salir
         </Link>
 
-        {/* --- COLUMNA IZQUIERDA: LA GALLETA --- */}
+        {/* --- COLUMNA IZQUIERDA --- */}
         <div className="flex-1 flex flex-col items-center justify-center bg-gray-900/50 backdrop-blur-md rounded-3xl border border-gray-700 p-8 shadow-2xl relative overflow-hidden">
-          {/* Rayos de sol rotando al fondo */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-yellow-900/20 to-transparent pointer-events-none"></div>
+          {/* Fondo animado */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-amber-900/10 to-transparent pointer-events-none"></div>
 
           <div className="text-center z-10 mb-8">
-              <h2 className="text-gray-400 text-xl font-bold uppercase tracking-widest">Tu Banco</h2>
-              <div className="text-5xl md:text-6xl font-black text-white drop-shadow-lg">
+              <h2 className="text-gray-400 text-xl font-bold uppercase tracking-widest mb-2">Tu Banco</h2>
+              <div className="text-5xl md:text-6xl font-black text-white drop-shadow-lg tabular-nums">
+                  {/* Math.floor visual para limpieza */}
                   {Math.floor(cookies).toLocaleString()} 🍪
               </div>
               <p className="text-blue-400 font-mono mt-2 animate-pulse">
-                  Producción: {cps.toFixed(1)} por segundo
+                  Producción: {cps.toFixed(1)} / seg
               </p>
+              <div className="mt-2 text-xs h-4 text-green-400 font-mono">
+                  {isSaving ? '☁️ Guardando...' : saveMessage}
+              </div>
           </div>
 
-          {/* LA GALLETA GIGANTE */}
           <button 
               id="big-cookie"
               onClick={handleClick}
-              className="
-                  w-64 h-64 md:w-80 md:h-80 
-                  rounded-full 
-                  bg-amber-600 
-                  border-8 border-amber-700
-                  shadow-[0_0_50px_rgba(217,119,6,0.4)]
-                  hover:shadow-[0_0_80px_rgba(217,119,6,0.6)]
-                  transition-all duration-100 ease-in-out
-                  flex items-center justify-center
-                  relative
-                  group
-                  cursor-pointer
-              "
+              className="w-64 h-64 md:w-80 md:h-80 rounded-full bg-amber-600 border-8 border-amber-700 shadow-[0_0_50px_rgba(217,119,6,0.4)] hover:shadow-[0_0_80px_rgba(217,119,6,0.6)] transition-all flex items-center justify-center relative group active:scale-95 touch-manipulation cursor-pointer"
           >
-              {/* Chispas de chocolate (decoración) */}
-              <div className="absolute top-10 left-16 w-8 h-8 bg-amber-900 rounded-full opacity-60"></div>
-              <div className="absolute bottom-16 right-20 w-10 h-10 bg-amber-900 rounded-full opacity-60"></div>
-              <div className="absolute top-1/2 left-10 w-6 h-6 bg-amber-900 rounded-full opacity-60"></div>
-              <div className="absolute top-14 right-14 w-9 h-9 bg-amber-900 rounded-full opacity-60"></div>
-              <div className="absolute bottom-10 left-1/2 w-7 h-7 bg-amber-900 rounded-full opacity-60"></div>
-              
-              <span className="text-9xl group-hover:scale-110 transition duration-300 drop-shadow-lg">🍪</span>
+              <span className="text-9xl group-hover:scale-110 transition duration-300 drop-shadow-lg select-none">🍪</span>
           </button>
 
           <button onClick={resetGame} className="mt-10 text-xs text-red-500 hover:underline opacity-50 hover:opacity-100">
-              Borrar Partida
+              Reiniciar Partida
           </button>
         </div>
 
-        {/* --- COLUMNA DERECHA: LA TIENDA --- */}
-        <div className="flex-1 bg-gray-900/80 backdrop-blur-md rounded-3xl border border-gray-700 p-6 flex flex-col h-[600px] overflow-hidden">
+        {/* --- COLUMNA DERECHA: TIENDA --- */}
+        <div className="flex-1 bg-gray-900/80 backdrop-blur-md rounded-3xl border border-gray-700 p-6 flex flex-col h-[600px]">
           <h2 className="text-2xl font-bold text-yellow-400 mb-4 border-b border-gray-700 pb-2">Tienda 🛒</h2>
           
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
@@ -169,12 +231,7 @@ export default function CookieClickerGame() {
                           key={item.id}
                           onClick={() => buyItem(item.id)}
                           disabled={!canAfford}
-                          className={`
-                              w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200
-                              ${canAfford 
-                                  ? 'bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-yellow-500 cursor-pointer shadow-lg' 
-                                  : 'bg-gray-900/50 border-gray-800 opacity-50 cursor-not-allowed grayscale'}
-                          `}
+                          className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200 ${canAfford ? 'bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-yellow-500 shadow-lg cursor-pointer' : 'bg-gray-900/50 border-gray-800 opacity-50 cursor-not-allowed grayscale'}`}
                       >
                           <div className="flex items-center gap-4">
                               <div className="text-4xl bg-black/30 p-2 rounded-lg">{item.icon}</div>

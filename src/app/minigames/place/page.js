@@ -14,7 +14,7 @@ export default function PlaceGame() {
   const [loading, setLoading] = useState(false);
   
   // 🔫 SISTEMA DE MUNICIÓN
-  const [ammo, setAmmo] = useState(3); // Empezamos asumiendo que tiene 3
+  const [ammo, setAmmo] = useState(3);
   const [nextRefillTime, setNextRefillTime] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
 
@@ -59,34 +59,47 @@ export default function PlaceGame() {
     }, 100);
   }, []);
 
-  // 3. RELOJ INTELIGENTE DE RECARGA 🔋
+  // 3. RELOJ INTELIGENTE DE RECARGA (CORREGIDO) 🛡️🔋
   useEffect(() => {
-    // Si tenemos los 3 puntos, no hay cuenta regresiva
+    // Si ya estamos llenos, no calculamos nada
     if (ammo >= 3) {
         setSecondsLeft(0);
         return;
     }
 
-    const interval = setInterval(() => {
-        if (!nextRefillTime) return;
+    // Función auxiliar para calcular tiempo real
+    const calculateTimeLeft = () => {
+        if (!nextRefillTime) return 0;
         
-        const now = new Date().getTime();
+        const now = Date.now();
         const target = new Date(nextRefillTime).getTime();
         const diff = Math.ceil((target - now) / 1000);
+        
+        return diff > 0 ? diff : 0;
+    };
 
-        if (diff <= 0) {
-            // ¡Se recargó un punto!
-            setAmmo(prev => Math.min(3, prev + 1));
-            // Si aun faltan puntos por llenar, reiniciamos el ciclo de 30s virtualmente
-            // (La API corregirá el tiempo exacto en el próximo click, esto es visual)
+    // Actualización inicial inmediata
+    setSecondsLeft(calculateTimeLeft());
+
+    const interval = setInterval(() => {
+        const remaining = calculateTimeLeft();
+        setSecondsLeft(remaining);
+
+        // Si el tiempo llegó a 0 y teníamos una fecha destino
+        if (remaining <= 0 && nextRefillTime) {
+            // Recarga visual optimista
+            setAmmo(prev => {
+                const nuevaAmmo = Math.min(3, prev + 1);
+                return nuevaAmmo;
+            });
+
+            // Si aún faltan balas (ej: tienes 1 y pasas a 2), reiniciamos el ciclo localmente
+            // La API es la autoridad, pero esto mantiene la UI fluida mientras tanto.
             if (ammo < 2) { 
-                const newTarget = new Date(now + 30000).toISOString();
-                setNextRefillTime(newTarget);
+                setNextRefillTime(new Date(Date.now() + 30000).toISOString());
             } else {
                 setNextRefillTime(null);
             }
-        } else {
-            setSecondsLeft(diff);
         }
     }, 1000);
 
@@ -110,37 +123,42 @@ export default function PlaceGame() {
 
   // 5. FUNCIÓN DE PINTAR
   const paintPixel = async (x, y) => {
-    if (ammo <= 0) return; // Si no hay balas, no dispara
+    if (ammo <= 0) return;
     if (loading) return;
     
-    // Optimistic Update: Restamos visualmente 1 punto inmediatamente
+    // Optimistic Update
+    const prevAmmo = ammo;
     setAmmo(prev => prev - 1);
     setLoading(true);
 
-    const res = await fetch('/api/place/paint', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ x, y, color: selectedColor })
-    });
+    try {
+        const res = await fetch('/api/place/paint', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ x, y, color: selectedColor })
+        });
 
-    const data = await res.json();
-    
-    if (res.ok) {
-        // La API nos confirma cuántas balas quedan y cuándo llega la próxima
-        setAmmo(data.balance);
-        if (data.nextRefill) {
-            setNextRefillTime(data.nextRefill);
+        const data = await res.json();
+        
+        if (res.ok) {
+            setAmmo(data.balance);
+            if (data.nextRefill) {
+                setNextRefillTime(data.nextRefill);
+            }
+        } else {
+            // Revertir si hay error
+            if (data.balance !== undefined) setAmmo(data.balance);
+            else setAmmo(prevAmmo);
+            alert(data.error || "Error al pintar");
         }
-    } else {
-        // Si falló (ej: hack), corregimos
-        if (data.balance !== undefined) setAmmo(data.balance);
-        alert(data.error || "Error al pintar");
+    } catch (e) {
+        setAmmo(prevAmmo);
+    } finally {
+        setLoading(false);
     }
-    
-    setLoading(false);
   };
 
-  // HANDLERS (Igual que antes)
+  // HANDLERS
   const handleMouseMove = (e) => {
     const rect = e.target.getBoundingClientRect();
     const scaleX = GRID_SIZE / rect.width;
@@ -164,16 +182,16 @@ export default function PlaceGame() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#d9d4d7] touch-none overflow-hidden z-0">
+    // FIX MÓVIL: h-[100dvh] asegura que ocupe la pantalla real visible
+    <div className="fixed inset-0 h-[100dvh] flex flex-col bg-[#d9d4d7] touch-none overflow-hidden z-0">
       
-      {/* HEADER CON NUEVO INDICADOR DE MUNICIÓN */}
+      {/* HEADER */}
       <div className="absolute top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
         <div className="bg-white/90 backdrop-blur px-5 py-2 rounded-full shadow-lg pointer-events-auto border border-gray-300 flex items-center gap-4">
              <h1 className="text-xl font-bold text-gray-800 hidden sm:block">d/place</h1>
              
              {/* 🔋 UI DE PUNTOS */}
              <div className="flex items-center gap-2">
-                {/* 3 Cuadritos */}
                 <div className="flex gap-1">
                     {[1, 2, 3].map(i => (
                         <div 
@@ -187,7 +205,7 @@ export default function PlaceGame() {
                     ))}
                 </div>
                 
-                {/* Texto de tiempo si está cargando */}
+                {/* Texto de tiempo */}
                 {ammo < 3 && (
                     <span className="text-xs font-mono font-bold text-gray-500 w-12 text-right">
                         {secondsLeft > 0 ? `+${secondsLeft}s` : '...'}
@@ -197,7 +215,7 @@ export default function PlaceGame() {
         </div>
       </div>
 
-      {/* ÁREA DE JUEGO (Igual que antes) */}
+      {/* ÁREA DE JUEGO */}
       <div className="flex-1 w-full h-full relative">
         <TransformWrapper
             ref={transformRef}
@@ -260,7 +278,7 @@ export default function PlaceGame() {
         </TransformWrapper>
       </div>
 
-      {/* PALETA DE COLORES (Igual que antes) */}
+      {/* PALETA DE COLORES */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-300 p-3 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:absolute md:bottom-8 md:w-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:rounded-2xl md:border md:pb-3">
         <p className="text-xs text-gray-400 text-center mb-2 font-mono uppercase tracking-widest">
             {loading ? 'Pintando...' : (ammo > 0 ? 'Selecciona Color' : 'Recargando...')}
