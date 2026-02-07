@@ -1,18 +1,19 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link' // 👈 IMPORTANTE: Necesitamos esto para el botón
 import { supabase } from '@/lib/supabase'
 import AdminList from './AdminList'
 
 export default function AdminPage() {
   const [authorized, setAuthorized] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [posts, setPosts] = useState([]) // 👈 1. Estado para guardar los posts
+  const [posts, setPosts] = useState([])
   const router = useRouter()
 
   useEffect(() => {
     const checkSessionAndLoadData = async () => {
-      // --- PASO 1: SEGURIDAD ---
+      // 1. SEGURIDAD
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session) {
@@ -29,8 +30,7 @@ export default function AdminPage() {
 
       setAuthorized(true)
 
-      // --- PASO 2: CARGAR DATOS (Esto faltaba) ---
-      // Ya que sabemos que eres admin, bajamos los posts para que puedas borrarlos
+      // 2. CARGAR POSTS
       const { data: postsData, error } = await supabase
         .from('posts')
         .select('*')
@@ -52,6 +52,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-4xl mx-auto">
+        {/* HEADER */}
         <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
             <h1 className="text-3xl font-bold text-green-500 font-mono">
                 ADMIN_PANEL_V2
@@ -67,7 +68,17 @@ export default function AdminPage() {
             </button>
         </div>
 
-        {/* 👇 3. AHORA SÍ LE PASAMOS LOS POSTS */}
+        {/* 👇 AQUÍ ESTÁ EL BOTÓN QUE TE DEBÍA 👇 */}
+        <div className="mb-6 flex justify-end">
+            <Link 
+                href="/admin/create" 
+                className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded shadow-lg hover:shadow-green-500/20 transition-all flex items-center gap-2"
+            >
+                <span className="text-xl font-mono">+</span> ESCRIBIR NUEVO POST
+            </Link>
+        </div>
+
+        {/* LISTA DE POSTS */}
         <AdminList posts={posts} />
       </div>
     </div>
