@@ -62,7 +62,7 @@ export default function AboutPage() {
             <SkillCard icon="🎮" name="Gamer" level="Favorito" color="border-yellow-500" />
             <SkillCard icon="🦊" name="Furry/Brony" level="Mediano" color="border-blue-500" />
             <SkillCard icon="🖌️" name="Dibujante" level="Me defiendo" color="border-cyan-500" />
-            <SkillCard icon="🔥" name="Calentón" level="Explorando" color="border-green-500" />
+            <SkillCard icon="🔥" name="Chistoson" level="A veces" color="border-green-500" />
           </div>
         </div>
 

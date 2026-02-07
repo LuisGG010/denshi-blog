@@ -46,6 +46,21 @@ export default async function PostPage({ params }) {
     timeZone: 'America/Mexico_City' // 👈 ESTA ES LA CLAVE (Fuerza horario de México)
   };
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    image: post.image_url ? [post.image_url] : [], // Tu imagen destacada
+    datePublished: post.created_at,
+    dateModified: post.created_at, // O updated_at si lo tienes
+    author: [{
+        '@type': 'Person',
+        name: 'Denshi', // Tu nombre o el del autor
+        url: 'https://tudominio.com/about' // Enlace a tu perfil
+      }],
+    description: post.content.slice(0, 150) + "..." // Pequeño resumen (puedes limpiar el markdown aquí si quieres)
+  };
+
   return (
     <div className="min-h-screen bg-black/40">
       <div className="max-w-3xl mx-auto py-12 px-6 text-white">
