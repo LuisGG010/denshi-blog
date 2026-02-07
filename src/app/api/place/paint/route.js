@@ -16,7 +16,7 @@ export async function POST(request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    const TIEMPO_ESPERA_SEGUNDOS = 60;
+    const TIEMPO_ESPERA_SEGUNDOS = 40;
 
     // Verificar Cooldown
     const { data: painter } = await supabaseAdmin
