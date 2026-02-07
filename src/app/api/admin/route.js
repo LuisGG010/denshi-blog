@@ -7,9 +7,9 @@ const ADMIN_EMAIL = 'luisgamer2015210@gmail.com'
 
 export async function POST(request) {
   try {
-    const cookieStore = cookies()
+    // ✅ CORRECCIÓN 1: await cookies() (Obligatorio en Next.js 15)
+    const cookieStore = await cookies()
 
-    // 1. SEGURIDAD (Verificar que eres tú)
     const supabaseAuth = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -25,10 +25,9 @@ export async function POST(request) {
     const { data: { session } } = await supabaseAuth.auth.getSession()
 
     if (!session || session.user.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized: No eres admin o expiró la sesión' }, { status: 401 })
     }
 
-    // 2. MODO DIOS ACTIVADO (Service Role)
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -37,33 +36,29 @@ export async function POST(request) {
     const body = await request.json()
     const { action, id, data } = body
 
-    // ==========================================
-    // 🤖 LISTA DE COMANDOS DEL ROBOT
-    // ==========================================
+    // --- MANEJO DE ACCIONES ---
 
-    // 1. BORRAR POST
     if (action === 'delete_post') {
         const { error } = await supabaseAdmin.from('posts').delete().eq('id', id)
         if (error) throw error
         return NextResponse.json({ success: true })
     }
 
-    // 2. CREAR POST
     if (action === 'create_post') {
         const { title, content, image_url, color } = data;
-        // OJO: Aquí mapeamos 'color' (frontend) a 'accent_color' (base de datos)
+        // ✅ CORRECCIÓN 2: Usamos 'color'
         const { error } = await supabaseAdmin.from('posts').insert({
-            title, content, image_url, accent_color: color
+            title, content, image_url, color: color 
         })
         if (error) throw error
         return NextResponse.json({ success: true })
     }
 
-    // 3. ACTUALIZAR POST (EDITAR)
     if (action === 'update_post') {
         const { title, content, image_url, color } = data;
+        // ✅ CORRECCIÓN 3: Usamos 'color'
         const { error } = await supabaseAdmin.from('posts').update({
-            title, content, image_url, accent_color: color,
+            title, content, image_url, color: color,
             updated_at: new Date().toISOString()
         }).eq('id', id)
         
@@ -71,17 +66,16 @@ export async function POST(request) {
         return NextResponse.json({ success: true })
     }
 
-    // 4. BORRAR COMENTARIO
     if (action === 'delete_comment') {
         const { error } = await supabaseAdmin.from('comments').delete().eq('id', id)
         if (error) throw error
         return NextResponse.json({ success: true })
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    return NextResponse.json({ error: 'Acción no reconocida' }, { status: 400 })
 
   } catch (error) {
-    console.error("Error API Admin:", error)
+    console.error("CRITICAL ERROR API:", error) // Verás esto en la terminal de VS Code
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

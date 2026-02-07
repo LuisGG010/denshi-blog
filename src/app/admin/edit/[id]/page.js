@@ -1,11 +1,13 @@
 'use client'
-import { useState, useEffect, use } from 'react' // 'use' es necesario para Next.js 15
+import { useState, useEffect, use } from 'react' // 'use' es vital en Next.js 15
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function EditPostPage({ params }) {
-  const { id } = use(params) // Desempaquetar params
+  // Desempaquetamos el ID usando 'use' (Requisito de Next.js 15)
+  const { id } = use(params)
+  
   const router = useRouter()
   
   const [loading, setLoading] = useState(true)
@@ -34,7 +36,8 @@ export default function EditPostPage({ params }) {
           title: postData.title,
           content: postData.content,
           image_url: postData.image_url || '',
-          color: postData.accent_color || '#3b82f6'
+          // 👇 AQUÍ ESTÁ EL TRUCO: Leemos 'color' O 'accent_color' para que no falle
+          color: postData.color || postData.accent_color || '#3b82f6'
         })
       }
 
@@ -52,26 +55,35 @@ export default function EditPostPage({ params }) {
     loadData()
   }, [id, router])
 
-  // 2. GUARDAR CAMBIOS (UPDATE)
+  // 2. GUARDAR CAMBIOS (UPDATE) - VERSIÓN DIAGNÓSTICO 🔍
   const handleUpdate = async (e) => {
     e.preventDefault()
     
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'update_post', // <--- ORDEN PARA EL ROBOT
-        id: id,
-        data: post
-      })
-    })
+    try {
+        const res = await fetch('/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update_post',
+            id: id,
+            data: post
+          })
+        })
 
-    if (res.ok) {
-      alert("✅ Post actualizado")
-      router.push('/admin')
-      router.refresh()
-    } else {
-      alert("❌ Error al guardar")
+        const dataResponse = await res.json(); 
+
+        if (res.ok) {
+          alert("✅ Post actualizado correctamente")
+          router.push('/admin')
+          router.refresh()
+        } else {
+          // Si falla, esto nos dirá EXACTAMENTE por qué
+          console.error("Error del servidor:", dataResponse);
+          alert("❌ Error: " + (dataResponse.error || "Error desconocido"));
+        }
+    } catch (error) {
+        console.error("Error de red:", error);
+        alert("❌ Error de Conexión: " + error.message);
     }
   }
 
@@ -93,7 +105,7 @@ export default function EditPostPage({ params }) {
     }
   }
 
-  if (loading) return <div className="min-h-screen bg-black text-white p-10">Cargando...</div>
+  if (loading) return <div className="min-h-screen bg-black text-white p-10 font-mono">Cargando datos...</div>
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8 flex flex-col items-center">
@@ -110,7 +122,7 @@ export default function EditPostPage({ params }) {
           <div className="mb-4">
             <label className="block text-gray-400 mb-2">Título</label>
             <input 
-              className="w-full bg-gray-900 border border-gray-700 p-2 rounded"
+              className="w-full bg-gray-900 border border-gray-700 p-2 rounded focus:border-white outline-none"
               value={post.title}
               onChange={e => setPost({...post, title: e.target.value})}
             />
@@ -118,9 +130,9 @@ export default function EditPostPage({ params }) {
           
           <div className="flex gap-4 mb-4">
             <div className="flex-1">
-               <label className="block text-gray-400 mb-2">Imagen</label>
+               <label className="block text-gray-400 mb-2">Imagen URL</label>
                <input 
-                 className="w-full bg-gray-900 border border-gray-700 p-2 rounded"
+                 className="w-full bg-gray-900 border border-gray-700 p-2 rounded focus:border-white outline-none"
                  value={post.image_url}
                  onChange={e => setPost({...post, image_url: e.target.value})}
                />
@@ -129,7 +141,7 @@ export default function EditPostPage({ params }) {
                <label className="block text-gray-400 mb-2">Color</label>
                <input 
                  type="color"
-                 className="h-10 w-10 bg-transparent"
+                 className="h-10 w-10 bg-transparent cursor-pointer"
                  value={post.color}
                  onChange={e => setPost({...post, color: e.target.value})}
                />
@@ -139,7 +151,7 @@ export default function EditPostPage({ params }) {
           <div className="mb-6">
             <label className="block text-gray-400 mb-2">Contenido</label>
             <textarea 
-              className="w-full bg-gray-900 border border-gray-700 p-4 rounded h-60 font-mono"
+              className="w-full bg-gray-900 border border-gray-700 p-4 rounded h-60 font-mono focus:border-white outline-none"
               value={post.content}
               onChange={e => setPost({...post, content: e.target.value})}
             />
@@ -155,16 +167,17 @@ export default function EditPostPage({ params }) {
             <h3 className="text-xl font-bold text-gray-400 mb-4">Comentarios ({comments.length})</h3>
             <div className="space-y-3">
                 {comments.map(c => (
-                    <div key={c.id} className="bg-gray-800 p-3 rounded flex justify-between items-start">
+                    <div key={c.id} className="bg-gray-800 p-3 rounded flex justify-between items-start border border-gray-700">
                         <div>
-                            <span className="text-green-400 text-xs font-bold">{c.author || 'Anónimo'}</span>
-                            <p className="text-gray-300 text-sm mt-1">{c.content}</p>
+                            <span className="text-green-400 text-xs font-bold block mb-1">{c.author || 'Anónimo'}</span>
+                            <p className="text-gray-300 text-sm">{c.content}</p>
                         </div>
-                        <button onClick={() => handleDeleteComment(c.id)} className="text-red-500 hover:text-red-400 p-1">
+                        <button onClick={() => handleDeleteComment(c.id)} className="text-red-500 hover:text-red-300 p-2">
                             🗑️
                         </button>
                     </div>
                 ))}
+                {comments.length === 0 && <p className="text-gray-600 italic">No hay comentarios aún.</p>}
             </div>
         </div>
 
