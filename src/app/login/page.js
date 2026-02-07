@@ -1,90 +1,62 @@
 'use client'
-
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const supabase = createClientComponentClient()
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setLoading(true)
 
-    // Intentamos iniciar sesión con Supabase
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
-    });
+    })
 
     if (error) {
-      alert('❌ ACCESO DENEGADO: Credenciales inválidas');
-      setLoading(false);
+      alert('Error: ' + error.message)
+      setLoading(false)
     } else {
-      // Si todo sale bien, vamos al panel de admin
-      router.push('/admin');
-      router.refresh(); // Refrescamos para que la Sidebar sepa que entramos
+      // Si entra, lo mandamos al admin
+      router.push('/admin')
+      router.refresh()
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-gray-900 border border-blue-900/50 p-8 rounded-xl shadow-[0_0_50px_rgba(30,58,138,0.2)]">
+    <div className="flex min-h-screen items-center justify-center bg-black text-white">
+      <form onSubmit={handleLogin} className="flex flex-col gap-4 p-8 border border-green-500 rounded bg-gray-900 w-80">
+        <h1 className="text-2xl font-mono text-green-500 text-center">ACCESS DENIED</h1>
+        <p className="text-xs text-gray-400 text-center mb-4">Please authenticate identity</p>
         
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 mb-2 tracking-wider">
-            SYSTEM ACCESS
-          </h1>
-          <p className="text-xs text-gray-500 font-mono">
-            // AUTHORIZED PERSONNEL ONLY
-          </p>
-        </div>
-
-        <form onSubmit={handleLogin} className="space-y-6">
-          
-          <div>
-            <label className="block text-xs font-mono text-blue-400 mb-2">IDENTIFIER_ID (EMAIL)</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black border border-gray-800 rounded p-3 text-white focus:border-blue-500 focus:outline-none focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] transition font-mono"
-              placeholder="admin@denshi.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono text-blue-400 mb-2">PASSCODE</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black border border-gray-800 rounded p-3 text-white focus:border-blue-500 focus:outline-none focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] transition font-mono"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
+        <input
+          type="email"
+          placeholder="Admin Email"
+          className="p-2 bg-black border border-gray-700 text-white focus:border-green-500 outline-none"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="p-2 bg-black border border-gray-700 text-white focus:border-green-500 outline-none"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        
+        <button 
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded transition duration-300 flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="animate-pulse">VERIFYING...</span>
-            ) : (
-              <>
-                <span>🔓</span> UNLOCK SYSTEM
-              </>
-            )}
-          </button>
-
-        </form>
-      </div>
+            className="bg-green-600 hover:bg-green-700 text-black font-bold py-2 mt-2 transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Decrypting...' : 'LOGIN'}
+        </button>
+      </form>
     </div>
-  );
+  )
 }
