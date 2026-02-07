@@ -9,7 +9,7 @@ export async function POST(request) {
   try {
     const cookieStore = cookies()
 
-    // 1. SEGURIDAD
+    // 1. SEGURIDAD (Verificar que eres tú)
     const supabaseAuth = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -28,7 +28,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 2. MODO DIOS ACTIVADO
+    // 2. MODO DIOS ACTIVADO (Service Role)
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -51,6 +51,7 @@ export async function POST(request) {
     // 2. CREAR POST
     if (action === 'create_post') {
         const { title, content, image_url, color } = data;
+        // OJO: Aquí mapeamos 'color' (frontend) a 'accent_color' (base de datos)
         const { error } = await supabaseAdmin.from('posts').insert({
             title, content, image_url, accent_color: color
         })
@@ -63,14 +64,14 @@ export async function POST(request) {
         const { title, content, image_url, color } = data;
         const { error } = await supabaseAdmin.from('posts').update({
             title, content, image_url, accent_color: color,
-            updated_at: new Date().toISOString() // Actualizamos la fecha
+            updated_at: new Date().toISOString()
         }).eq('id', id)
         
         if (error) throw error
         return NextResponse.json({ success: true })
     }
 
-    // 4. BORRAR COMENTARIO (MODERACIÓN)
+    // 4. BORRAR COMENTARIO
     if (action === 'delete_comment') {
         const { error } = await supabaseAdmin.from('comments').delete().eq('id', id)
         if (error) throw error
