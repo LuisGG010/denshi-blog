@@ -29,14 +29,16 @@ export async function POST(request) {
     const userHash = crypto.createHash('sha256').update(ip + salt).digest('hex');
 
     // 3. EJECUCIÓN (Desde la lib)
-    const result = await paintPixelAction(userHash, x, y, color);
+  const result = await paintPixelAction(userHash, x, y, color);
 
-    // 4. RESPUESTA
-    if (!result.success) {
-        return NextResponse.json(result, { status: 429 });
-    }
-
-    return NextResponse.json(result);
+  // 4. RESPUESTA MEJORADA
+  if (!result.success) {
+      // Si el servidor dice que no, le enviamos el cooldown real al cliente
+      return NextResponse.json({
+          error: 'Munición agotada',
+          nextRefillIn: result.nextRefillIn || 10 // Tiempo que falta
+      }, { status: 429 });
+  }
 
   } catch (error) {
     console.error("API Error:", error);
