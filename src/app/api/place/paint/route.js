@@ -24,21 +24,28 @@ export async function POST(request) {
     }
 
     // 2. IDENTIFICACIÓN
+    // 2. IDENTIFICACIÓN AVANZADA (ANTI-BOT + ANTI-COLISIÓN)
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const ua = request.headers.get('user-agent') || 'unknown';
     const salt = process.env.IP_SALT || 'salt-seguro';
-    const userHash = crypto.createHash('sha256').update(ip + salt).digest('hex');
+
+    // Huella híbrida: IP + Navegador
+    const fingerprint = `${ip}|${ua}`;
+
+    const userHash = crypto
+      .createHash('sha256')
+      .update(fingerprint + salt)
+      .digest('hex');
+
 
     // 3. EJECUCIÓN (Desde la lib)
   const result = await paintPixelAction(userHash, x, y, color);
 
   // 4. RESPUESTA MEJORADA
   if (!result.success) {
-      // Si el servidor dice que no, le enviamos el cooldown real al cliente
-      return NextResponse.json({
-          error: 'Munición agotada',
-          nextRefillIn: result.nextRefillIn || 10 // Tiempo que falta
-      }, { status: 429 });
+    return NextResponse.json(result, { status: 429 });
   }
+
 
   } catch (error) {
     console.error("API Error:", error);

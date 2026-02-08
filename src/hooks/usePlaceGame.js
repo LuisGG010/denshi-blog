@@ -50,8 +50,9 @@ export function usePlaceGame() {
       
       // Usamos Math.max para evitar números negativos
       // Y no redondeamos hacia arriba tan agresivamente
-      const diff = Math.floor((target - now) / 1000); 
-      return diff > 0 ? diff + 1 : 0; // Añadimos +1 visual para seguridad
+      const diff = Math.ceil((target - now) / 1000);
+      return Math.max(0, diff);
+
     };
 
     setSecondsLeft(calculateTimeLeft());
