@@ -42,17 +42,12 @@ export function usePlaceGame() {
         return;
     }
 
-    // Dentro de usePlaceGame.js, cambia calculateTimeLeft
     const calculateTimeLeft = () => {
-      if (!nextRefillTime) return 0;
-      const now = Date.now();
-      const target = new Date(nextRefillTime).getTime();
-      
-      // Usamos Math.max para evitar números negativos
-      // Y no redondeamos hacia arriba tan agresivamente
-      const diff = Math.ceil((target - now) / 1000);
-      return Math.max(0, diff);
-
+        if (!nextRefillTime) return 0;
+        const now = Date.now();
+        const target = new Date(nextRefillTime).getTime();
+        const diff = Math.ceil((target - now) / 1000);
+        return diff > 0 ? diff : 0;
     };
 
     setSecondsLeft(calculateTimeLeft());
@@ -73,15 +68,12 @@ export function usePlaceGame() {
   }, [ammo, nextRefillTime]);
 
   // 3. ACCIÓN DE PINTAR
-  // src/hooks/usePlaceGame.js
-
   const paint = async (x, y, color) => {
     if (ammo <= 0 || loading) return;
     
+    // Optimistic Update
     const prevAmmo = ammo;
-    const prevTime = nextRefillTime;
-
-    setAmmo(prev => prev - 1); // Optimistic Update
+    setAmmo(prev => prev - 1);
     setLoading(true);
 
     try {
@@ -96,15 +88,9 @@ export function usePlaceGame() {
         if (res.ok) {
             setAmmo(data.balance);
             if (data.nextRefill) setNextRefillTime(data.nextRefill);
-        } else if (res.status === 429) {
-            // 🛡️ SINCRONIZACIÓN AUTOMÁTICA (En lugar de alert)
-            console.warn("Servidor ocupado, sincronizando munición...");
-            if (data.balance !== undefined) setAmmo(data.balance);
-            if (data.nextRefill) setNextRefillTime(data.nextRefill);
-            // Opcional: puedes poner un sonido de "clic fallido" o vibración corta
         } else {
-            setAmmo(prevAmmo);
-            setNextRefillTime(prevTime);
+            if (data.balance !== undefined) setAmmo(data.balance);
+            else setAmmo(prevAmmo);
             alert(data.error || "Error al pintar");
         }
     } catch (e) {
