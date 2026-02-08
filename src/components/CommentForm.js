@@ -1,62 +1,78 @@
 'use client'
 
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// 1. AÑADIMOS 'postTitle' AQUÍ 👇
 export default function CommentForm({ postId, postTitle }) {
   const [content, setContent] = useState('');
   const [author, setAuthor] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
   const router = useRouter();
+
+  // Cooldown visual
+  useEffect(() => {
+    const lastComment = localStorage.getItem('last_comment_ts');
+    if (lastComment) {
+      const diff = Math.floor((Date.now() - parseInt(lastComment)) / 1000);
+      if (diff < 60) setTimeLeft(60 - diff);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [timeLeft]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    if (!content.trim() || timeLeft > 0) return;
     
     setLoading(true);
 
-    // Guardar en Supabase (Base de datos)
-    const { error } = await supabase
-      .from('comments')
-      .insert({
-        post_id: postId,
-        content: content,
-        author: author || 'Anónimo',
-        image_url: imageUrl || null
-      });
-
-    if (error) {
-      alert("Error enviando comentario");
-    } else {
-      
-      // --- AVISAR A DISCORD ---
-      fetch('/api/notify', {
+    try {
+      // 🚀 Enviamos a nuestra API (src/app/api/comment/route.js)
+      const res = await fetch('/api/comment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            author: author || 'Anónimo',
-            content: content,
-            // 2. ENVIAMOS EL TÍTULO REAL AQUÍ 👇
-            postTitle: postTitle || 'Sin título' 
+          postId,
+          postTitle,
+          content,
+          author: author || 'Anónimo',
+          imageUrl
         })
       });
-      // ------------------------
 
-      setContent('');
-      setAuthor('');
-      setImageUrl('');
-      router.refresh();
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Error enviando comentario");
+        if (res.status === 429) {
+          setTimeLeft(60);
+          localStorage.setItem('last_comment_ts', Date.now().toString());
+        }
+      } else {
+        // Éxito: Guardamos marca de tiempo local
+        localStorage.setItem('last_comment_ts', Date.now().toString());
+        setTimeLeft(60);
+        setContent('');
+        setAuthor('');
+        setImageUrl('');
+        router.refresh();
+      }
+    } catch (error) {
+      alert("Error de conexión");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      
-      {/* INPUT PARA EL NOMBRE */}
       <div>
         <label className="block text-gray-400 text-xs font-bold mb-1 ml-1">Tu Nombre</label>
         <input
@@ -69,7 +85,6 @@ export default function CommentForm({ postId, postTitle }) {
         />
       </div>
 
-      {/* INPUT PARA EL COMENTARIO */}
       <div>
         <label className="block text-gray-400 text-xs font-bold mb-1 ml-1">Comentario</label>
         <textarea
@@ -81,10 +96,9 @@ export default function CommentForm({ postId, postTitle }) {
         />
       </div>
 
-      {/* INPUT PARA IMAGEN (Opcional) */}
       <input 
         type="text" 
-        placeholder="Link de imagen (https://...)"
+        placeholder="Link de imagen (opcional)"
         value={imageUrl}
         onChange={(e) => setImageUrl(e.target.value)}
         className="w-full p-2 bg-black text-gray-400 text-sm border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
@@ -92,12 +106,13 @@ export default function CommentForm({ postId, postTitle }) {
 
       <button 
         type="submit" 
-        disabled={loading}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition disabled:opacity-50 mt-2"
+        disabled={loading || timeLeft > 0}
+        className={`font-bold py-2 px-4 rounded transition mt-2 text-white ${
+          timeLeft > 0 ? 'bg-gray-700 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+        }`}
       >
-        {loading ? 'Enviando...' : 'Enviar Comentario 🚀'}
+        {loading ? 'Enviando...' : timeLeft > 0 ? `Espera ${timeLeft}s ⏳` : 'Enviar Comentario 🚀'}
       </button>
-
     </form>
   );
 }
