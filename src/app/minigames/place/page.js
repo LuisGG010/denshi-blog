@@ -11,22 +11,26 @@ const PALETTE = [
   { hex: '#ad2e00', name: 'Rojo Marrón' },
   { hex: '#FF4500', name: 'Rojo Naranja' },
   { hex: '#FFA800', name: 'Naranja' },
-  { hex: '#FFFF00', name: 'Amarillo' },
+  { hex: '#ffd900', name: 'Amarillo' },
   { hex: '#00A368', name: 'Verde Bosque' },
   { hex: '#7EED56', name: 'Verde Lima' },
   { hex: '#9bffc1', name: 'Verde Menta' },
-  { hex: '#2450A4', name: 'Azul Real' },
-  { hex: '#3690EA', name: 'Azul Cielo' },
   { hex: '#51E9F4', name: 'Cian' },
+  { hex: '#3690EA', name: 'Azul Cielo' },
+  { hex: '#2450A4', name: 'Azul Real' },
   { hex: '#811E9F', name: 'Púrpura' },
   { hex: '#B44AC0', name: 'Lavanda' },
-  { hex: '#FF99AA', 'name': 'Rosa Pastel' },
-  { hex: '#ff47b8', name: 'Rosa Fucsia' },
-  { hex: '#ff2c84', name: 'Magenta' },
+  { hex: '#f174ff', name: 'Morado pastel' },
+  { hex: '#ffb2bf', name: 'Rosa Pastel' },
+  { hex: '#ff78b7', name: 'Rosa' },
+  { hex: '#ff37b2', name: 'Rosa Fucsia' },
+  { hex: '#ff1878', name: 'Magenta' },
   { hex: '#ffcea2', name: 'Piel Pastel' },
+  { hex: '#ffaa5f', name: 'Piel naranja' },
   { hex: '#9C6926', name: 'Marrón' },
   { hex: '#5c3e16', name: 'Café Oscuro' },
   { hex: '#000000', name: 'Negro' },
+  { hex: '#474747', name: 'Gris Oscuro' },
   { hex: '#898D90', name: 'Gris' },
   { hex: '#D4D7D9', name: 'Gris Claro' },
   { hex: '#FFFFFF', name: 'Blanco' }
@@ -172,8 +176,8 @@ export default function PlaceGame() {
             {/* 🕹️ CONTROLES DE ZOOM RESTAURADOS */}
             {({ zoomIn, zoomOut, centerView }) => (
             <>
-                {/* Botones verticales a la derecha, encima de la paleta */}
-                <div className="absolute bottom-32 right-4 flex flex-col gap-2 z-50">
+                {/* Botones verticales a la derecha, subidos un poco para no tapar la paleta doble */}
+                <div className="absolute bottom-40 right-4 flex flex-col gap-2 z-50">
                     <button onClick={() => zoomIn()} className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-200 font-bold text-gray-700 active:bg-gray-100 transition-colors text-xl flex items-center justify-center">+</button>
                     <button onClick={() => zoomOut()} className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-200 font-bold text-gray-700 active:bg-gray-100 transition-colors text-xl flex items-center justify-center">-</button>
                     <button onClick={() => centerView(1)} className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-200 font-bold text-xs text-gray-500 active:bg-gray-100 transition-colors flex items-center justify-center">1:1</button>
@@ -204,7 +208,6 @@ export default function PlaceGame() {
                                     left: `${hoverPos.x * (BASE_SIZE / GRID_SIZE)}px`,
                                     top: `${hoverPos.y * (BASE_SIZE / GRID_SIZE)}px`,
                                     backgroundColor: ammo <= 0 ? 'transparent' : selectedColor.hex,
-                                    // Borde fino de 1px blanco y outline negro para contraste
                                     border: '1px solid white',
                                     outline: '1px solid black',
                                     opacity: 0.8
@@ -218,23 +221,28 @@ export default function PlaceGame() {
         </TransformWrapper>
       </div>
 
-      {/* PALETA DOCK */}
+      {/* PALETA DOCK DE 2 FILAS */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-[95%] sm:w-auto">
-        <div className="bg-white/90 backdrop-blur-md border border-gray-200/50 p-2 rounded-2xl shadow-xl flex flex-col items-center">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="bg-black/4 backdrop-blur-md border border-gray-200/50 p-3 rounded-2xl shadow-xl flex flex-col items-center">
+          <div className="flex items-center gap-2 mb-2">
              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedColor.hex }}></div>
              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
                {loading ? 'Pintando...' : selectedColor.name}
              </span>
           </div>
-          <div className="flex gap-1.5 overflow-x-auto w-full sm:w-auto no-scrollbar px-1 py-1">
+          
+          {/* GRID para 2 FILAS */}
+          {/* PALETA: Grid con scroll en móvil, Flex wrap en PC */}
+          <div className="grid grid-rows-2 grid-flow-col gap-2 overflow-x-auto w-full px-1 no-scrollbar md:flex md:flex-wrap md:justify-center md:gap-3 md:overflow-visible">
               {PALETTE.map(c => (
                 <button
                   key={c.hex}
                   onClick={() => setSelectedColor(c)}
-                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 shrink-0 transition-transform ${selectedColor.hex === c.hex ? 'border-gray-800 scale-110 shadow-md z-10' : 'border-transparent hover:scale-105'}`}
+                  // Ajustamos tamaños: w-8 en móvil, w-10 en PC para mejor click
+                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full shadow-md border-2 shrink-0 transition-transform ${selectedColor.hex === c.hex ? 'border-gray-800 scale-110 shadow-md z-10' : 'border-transparent hover:scale-105'}`}
                   style={{ backgroundColor: c.hex }}
                   aria-label={c.name}
+                  title={c.name}
                 />
               ))}
           </div>
