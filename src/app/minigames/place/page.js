@@ -6,15 +6,37 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 const GRID_SIZE = 250; 
 const BASE_SIZE = 1000;
-const COLORS = ['#FF4500', '#FFA800', '#FFD635', '#00A368', '#7EED56', '#2450A4', '#3690EA', '#51E9F4', '#811E9F', '#B44AC0', '#FF99AA', '#9C6926', '#000000', '#898D90', '#D4D7D9', '#FFFFFF'];
+
+const PALETTE = [
+  { hex: '#ad2e00', name: 'Rojo Marrón' },
+  { hex: '#FF4500', name: 'Rojo Naranja' },
+  { hex: '#FFA800', name: 'Naranja' },
+  { hex: '#FFFF00', name: 'Amarillo' },
+  { hex: '#00A368', name: 'Verde Bosque' },
+  { hex: '#7EED56', name: 'Verde Lima' },
+  { hex: '#9bffc1', name: 'Verde Menta' },
+  { hex: '#2450A4', name: 'Azul Real' },
+  { hex: '#3690EA', name: 'Azul Cielo' },
+  { hex: '#51E9F4', name: 'Cian' },
+  { hex: '#811E9F', name: 'Púrpura' },
+  { hex: '#B44AC0', name: 'Lavanda' },
+  { hex: '#FF99AA', 'name': 'Rosa Pastel' },
+  { hex: '#ff47b8', name: 'Rosa Fucsia' },
+  { hex: '#ff2c84', name: 'Magenta' },
+  { hex: '#ffcea2', name: 'Piel Pastel' },
+  { hex: '#9C6926', name: 'Marrón' },
+  { hex: '#5c3e16', name: 'Café Oscuro' },
+  { hex: '#000000', name: 'Negro' },
+  { hex: '#898D90', name: 'Gris' },
+  { hex: '#D4D7D9', name: 'Gris Claro' },
+  { hex: '#FFFFFF', name: 'Blanco' }
+];
 
 export default function PlaceGame() {
   const [pixels, setPixels] = useState({});
-  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  const [selectedColor, setSelectedColor] = useState(PALETTE[0]); 
   const [loading, setLoading] = useState(false);
-  
-  // 🔫 SISTEMA DE MUNICIÓN
-  const [ammo, setAmmo] = useState(3); // Empezamos asumiendo que tiene 3
+  const [ammo, setAmmo] = useState(3);
   const [nextRefillTime, setNextRefillTime] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
 
@@ -48,53 +70,23 @@ export default function PlaceGame() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // 2. ZOOM AUTOMÁTICO
+  // 2. LÓGICA DE RECARGA
   useEffect(() => {
-    setTimeout(() => {
-        if (transformRef.current) {
-            const { centerView } = transformRef.current;
-            const initialZoom = window.innerWidth > 768 ? 1 : 0.4;
-            centerView(initialZoom);
-        }
-    }, 100);
-  }, []);
-
-  // 3. RELOJ INTELIGENTE DE RECARGA 🔋
-  useEffect(() => {
-    // Si tenemos los 3 puntos, no hay cuenta regresiva
-    if (ammo >= 3) {
-        setSecondsLeft(0);
-        return;
-    }
-
+    if (ammo >= 3) { setSecondsLeft(0); return; }
     const interval = setInterval(() => {
         if (!nextRefillTime) return;
-        
         const now = new Date().getTime();
         const target = new Date(nextRefillTime).getTime();
         const diff = Math.ceil((target - now) / 1000);
-
         if (diff <= 0) {
-            // ¡Se recargó un punto!
             setAmmo(prev => Math.min(3, prev + 1));
-            // Si aun faltan puntos por llenar, reiniciamos el ciclo de 30s virtualmente
-            // (La API corregirá el tiempo exacto en el próximo click, esto es visual)
-            if (ammo < 2) { 
-                const newTarget = new Date(now + 30000).toISOString();
-                setNextRefillTime(newTarget);
-            } else {
-                setNextRefillTime(null);
-            }
-        } else {
-            setSecondsLeft(diff);
-        }
+            setNextRefillTime(ammo < 2 ? new Date(now + 30000).toISOString() : null);
+        } else { setSecondsLeft(diff); }
     }, 1000);
-
     return () => clearInterval(interval);
   }, [ammo, nextRefillTime]);
 
-
-  // 4. DIBUJAR CANVAS
+  // 3. DIBUJAR CANVAS
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -108,127 +100,87 @@ export default function PlaceGame() {
     });
   }, [pixels]);
 
-  // 5. FUNCIÓN DE PINTAR
+  // 4. PINTAR
   const paintPixel = async (x, y) => {
-    if (ammo <= 0) return; // Si no hay balas, no dispara
-    if (loading) return;
-    
-    // Optimistic Update: Restamos visualmente 1 punto inmediatamente
+    if (ammo <= 0 || loading) return;
     setAmmo(prev => prev - 1);
     setLoading(true);
-
     const res = await fetch('/api/place/paint', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ x, y, color: selectedColor })
+      body: JSON.stringify({ x, y, color: selectedColor.hex })
     });
-
     const data = await res.json();
-    
     if (res.ok) {
-        // La API nos confirma cuántas balas quedan y cuándo llega la próxima
         setAmmo(data.balance);
-        if (data.nextRefill) {
-            setNextRefillTime(data.nextRefill);
-        }
+        if (data.nextRefill) setNextRefillTime(data.nextRefill);
     } else {
-        // Si falló (ej: hack), corregimos
         if (data.balance !== undefined) setAmmo(data.balance);
-        alert(data.error || "Error al pintar");
     }
-    
     setLoading(false);
   };
 
-  // HANDLERS (Igual que antes)
   const handleMouseMove = (e) => {
     const rect = e.target.getBoundingClientRect();
-    const scaleX = GRID_SIZE / rect.width;
-    const scaleY = GRID_SIZE / rect.height;
-    const x = Math.floor((e.clientX - rect.left) * scaleX);
-    const y = Math.floor((e.clientY - rect.top) * scaleY);
-
-    if (!hoverPos || hoverPos.x !== x || hoverPos.y !== y) {
-        if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
-            setHoverPos({ x, y });
-        } else {
-            setHoverPos(null);
-        }
-    }
-  };
-  const handleMouseDown = (e) => { dragStartPos.current = { x: e.clientX, y: e.clientY }; };
-  const handleMouseUp = (e) => {
-    const moveX = Math.abs(e.clientX - dragStartPos.current.x);
-    const moveY = Math.abs(e.clientY - dragStartPos.current.y);
-    if (moveX < 10 && moveY < 10 && hoverPos) paintPixel(hoverPos.x, hoverPos.y);
+    const x = Math.floor((e.clientX - rect.left) * (GRID_SIZE / rect.width));
+    const y = Math.floor((e.clientY - rect.top) * (GRID_SIZE / rect.height));
+    if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) setHoverPos({ x, y });
+    else setHoverPos(null);
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#d9d4d7] touch-none overflow-hidden z-0">
-      {/* Coordenadas del pixel */}
-      <div className="fixed top-20 right-4 z-50 bg-black/70 text-white px-3 py-1 rounded-lg text-xs font-mono shadow-lg pointer-events-none">
-        {hoverPos ? `x:${hoverPos.x} y:${hoverPos.y}` : '--'}
+    <div className="fixed inset-0 flex flex-col bg-[#d9d4d7] touch-none overflow-hidden select-none">
+      
+      {/* COORDENADAS */}
+      <div className="fixed top-16 right-2 z-40 pointer-events-none">
+        {hoverPos && (
+          <div className="bg-black/60 backdrop-blur text-white px-2 py-1 rounded-md text-[10px] font-mono shadow-sm flex flex-col items-end">
+            <span>x:{hoverPos.x} y:{hoverPos.y}</span>
+            {pixels[`${hoverPos.x}-${hoverPos.y}`] && (
+              <span className="text-gray-300">
+                {PALETTE.find(c => c.hex === pixels[`${hoverPos.x}-${hoverPos.y}`])?.name || ''}
+              </span>
+            )}
+          </div>
+        )}
       </div>
-      {/* HEADER CON NUEVO INDICADOR DE MUNICIÓN */}
-      <div className="absolute top-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
-        <div className="bg-white/90 backdrop-blur px-5 py-2 rounded-full shadow-lg pointer-events-auto border border-gray-300 flex items-center gap-4">
-             <h1 className="text-xl font-bold text-gray-800 hidden sm:block">d/place</h1>
-             
-             {/* 🔋 UI DE PUNTOS */}
+
+      {/* HEADER */}
+      <div className="absolute top-2 left-0 right-0 z-50 flex justify-center pointer-events-none">
+        <div className="bg-white/95 backdrop-blur px-4 py-2 rounded-full shadow-lg pointer-events-auto border border-gray-200 flex items-center gap-3 scale-90 sm:scale-100 origin-top">
+             <h1 className="text-lg font-black text-gray-800 tracking-tighter hidden sm:block">d/place</h1>
              <div className="flex items-center gap-2">
-                {/* 3 Cuadritos */}
                 <div className="flex gap-1">
                     {[1, 2, 3].map(i => (
-                        <div 
-                            key={i} 
-                            className={`w-4 h-6 rounded-sm border transition-all ${
-                                i <= ammo 
-                                ? 'bg-green-500 border-green-600 shadow-[0_0_8px_rgba(34,197,94,0.6)]' // Lleno
-                                : 'bg-gray-200 border-gray-300' // Vacío
-                            }`}
-                        />
+                        <div key={i} className="relative flex items-center justify-center">
+                          <div className={`w-3 h-6 rounded border-2 transition-all ${i <= ammo ? 'bg-blue-500 border-blue-600' : 'bg-gray-200 border-gray-300'}`} />
+                          {i <= ammo && <div className="absolute w-1 h-1 bg-white rounded-full opacity-60" />}
+                        </div>
                     ))}
                 </div>
-                
-                {/* Texto de tiempo si está cargando */}
                 {ammo < 3 && (
-                    <span className="text-xs font-mono font-bold text-gray-500 w-12 text-right">
-                        {secondsLeft > 0 ? `+${secondsLeft}s` : '...'}
+                    <span className="text-xs font-bold text-blue-600 w-8 text-right tabular-nums">
+                        {secondsLeft}s
                     </span>
                 )}
              </div>
         </div>
       </div>
 
-      {/* ÁREA DE JUEGO (Igual que antes) */}
       <div className="flex-1 w-full h-full relative">
-        <TransformWrapper
-            ref={transformRef}
-            initialScale={1}
-            minScale={0.1}
-            maxScale={40}
-            centerOnInit={true}
-            wheel={{ step: 0.2 }}
-            doubleClick={{ disabled: true }}
-            limitToBounds={false} 
-        >
+        <TransformWrapper ref={transformRef} minScale={0.1} maxScale={40} centerOnInit={true} limitToBounds={false}>
+            {/* 🕹️ CONTROLES DE ZOOM RESTAURADOS */}
             {({ zoomIn, zoomOut, centerView }) => (
             <>
-                <div className="hidden md:flex absolute bottom-32 right-6 flex-col gap-2 z-40">
-                    <button onClick={() => zoomIn()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">+</button>
-                    <button onClick={() => zoomOut()} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xl">-</button>
-                    <button onClick={() => centerView(window.innerWidth > 768 ? 1 : 0.4)} className="bg-white text-black w-10 h-10 rounded-full shadow-lg font-bold hover:bg-gray-100 text-xs">↺</button>
+                {/* Botones verticales a la derecha, encima de la paleta */}
+                <div className="absolute bottom-32 right-4 flex flex-col gap-2 z-50">
+                    <button onClick={() => zoomIn()} className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-200 font-bold text-gray-700 active:bg-gray-100 transition-colors text-xl flex items-center justify-center">+</button>
+                    <button onClick={() => zoomOut()} className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-200 font-bold text-gray-700 active:bg-gray-100 transition-colors text-xl flex items-center justify-center">-</button>
+                    <button onClick={() => centerView(1)} className="w-10 h-10 bg-white rounded-xl shadow-lg border border-gray-200 font-bold text-xs text-gray-500 active:bg-gray-100 transition-colors flex items-center justify-center">1:1</button>
                 </div>
 
-                <TransformComponent
-                    wrapperStyle={{ width: "100%", height: "100%" }}
-                    contentStyle={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}
-                >
-                    <div 
-                        className="relative bg-white shadow-2xl origin-center shrink-0"
-                        style={{ width: `${BASE_SIZE}px`, height: `${BASE_SIZE}px` }}
-                        onMouseLeave={() => setHoverPos(null)}
-                    >
+                <TransformComponent wrapperStyle={{ width: "100vw", height: "100vh" }}>
+                    <div className="relative bg-white shadow-2xl" style={{ width: `${BASE_SIZE}px`, height: `${BASE_SIZE}px` }}>
                         <canvas
                             ref={canvasRef}
                             width={GRID_SIZE}
@@ -236,23 +188,26 @@ export default function PlaceGame() {
                             className={`w-full h-full ${ammo <= 0 ? 'cursor-not-allowed' : 'cursor-crosshair'}`}
                             style={{ imageRendering: 'pixelated' }}
                             onMouseMove={handleMouseMove}
-                            onMouseDown={handleMouseDown}
-                            onMouseUp={handleMouseUp}
-                            onTouchStart={(e) => handleMouseDown(e.touches[0])}
-                            onTouchEnd={(e) => handleMouseUp(e.changedTouches[0])}
+                            onMouseDown={(e) => { dragStartPos.current = { x: e.clientX, y: e.clientY }; }}
+                            onMouseUp={(e) => {
+                            const dist = Math.hypot(e.clientX - dragStartPos.current.x, e.clientY - dragStartPos.current.y);
+                            if (dist < 10 && hoverPos) paintPixel(hoverPos.x, hoverPos.y);
+                            }}
                         />
-                        {/* Cursor Fantasma */}
+                        {/* CURSOR SELECCIÓN (Estilo Fino) */}
                         {hoverPos && (
                             <div 
-                                className="absolute pointer-events-none border-2 border-white/90 shadow-sm z-10 mix-blend-difference"
+                                className="absolute pointer-events-none z-10"
                                 style={{
                                     width: `${BASE_SIZE / GRID_SIZE}px`,
                                     height: `${BASE_SIZE / GRID_SIZE}px`,
-                                    left: `${(hoverPos.x * (BASE_SIZE / GRID_SIZE))}px`,
-                                    top: `${(hoverPos.y * (BASE_SIZE / GRID_SIZE))}px`,
-                                    backgroundColor: ammo <= 0 ? 'transparent' : selectedColor,
-                                    borderColor: ammo <= 0 ? 'red' : 'white',
-                                    opacity: 0.6
+                                    left: `${hoverPos.x * (BASE_SIZE / GRID_SIZE)}px`,
+                                    top: `${hoverPos.y * (BASE_SIZE / GRID_SIZE)}px`,
+                                    backgroundColor: ammo <= 0 ? 'transparent' : selectedColor.hex,
+                                    // Borde fino de 1px blanco y outline negro para contraste
+                                    border: '1px solid white',
+                                    outline: '1px solid black',
+                                    opacity: 0.8
                                 }}
                             />
                         )}
@@ -263,20 +218,26 @@ export default function PlaceGame() {
         </TransformWrapper>
       </div>
 
-      {/* PALETA DE COLORES (Igual que antes) */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-300 p-3 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:absolute md:bottom-8 md:w-auto md:left-1/2 md:right-auto md:-translate-x-1/2 md:rounded-2xl md:border md:pb-3">
-        <p className="text-xs text-gray-400 text-center mb-2 font-mono uppercase tracking-widest">
-            {loading ? 'Pintando...' : (ammo > 0 ? 'Selecciona Color' : 'Recargando...')}
-        </p>
-        <div className="flex gap-2 overflow-x-auto pb-1 px-1 no-scrollbar justify-start md:justify-center">
-            {COLORS.map(c => (
-              <button
-                key={c}
-                onClick={() => setSelectedColor(c)}
-                className={`w-9 h-9 rounded-full border-2 shrink-0 transition-all hover:scale-110 ${selectedColor === c ? 'border-gray-800 scale-110 shadow-md ring-2 ring-gray-300' : 'border-transparent'}`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
+      {/* PALETA DOCK */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-[95%] sm:w-auto">
+        <div className="bg-white/90 backdrop-blur-md border border-gray-200/50 p-2 rounded-2xl shadow-xl flex flex-col items-center">
+          <div className="flex items-center gap-2 mb-1">
+             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedColor.hex }}></div>
+             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+               {loading ? 'Pintando...' : selectedColor.name}
+             </span>
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto w-full sm:w-auto no-scrollbar px-1 py-1">
+              {PALETTE.map(c => (
+                <button
+                  key={c.hex}
+                  onClick={() => setSelectedColor(c)}
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 shrink-0 transition-transform ${selectedColor.hex === c.hex ? 'border-gray-800 scale-110 shadow-md z-10' : 'border-transparent hover:scale-105'}`}
+                  style={{ backgroundColor: c.hex }}
+                  aria-label={c.name}
+                />
+              ))}
+          </div>
         </div>
       </div>
     </div>
