@@ -1,119 +1,44 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { usePlaceGame } from '@/hooks/usePlaceGame'; // 👈 Importamos el hook
 
 const GRID_SIZE = 250; 
 const BASE_SIZE = 1000;
 const COLORS = ['#FF4500', '#FFA800', '#FFD635', '#00A368', '#7EED56', '#2450A4', '#3690EA', '#51E9F4', '#811E9F', '#B44AC0', '#FF99AA', '#9C6926', '#000000', '#898D90', '#D4D7D9', '#FFFFFF'];
 
 export default function PlaceGame() {
-  const [pixels, setPixels] = useState({});
-  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
-  const [loading, setLoading] = useState(false);
+  // Desempaquetamos la lógica
+  const { pixels, ammo, secondsLeft, loading, paint } = usePlaceGame();
   
-  // 🔫 SISTEMA DE MUNICIÓN
-  const [ammo, setAmmo] = useState(3);
-  const [nextRefillTime, setNextRefillTime] = useState(null);
-  const [secondsLeft, setSecondsLeft] = useState(0);
-
+  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const canvasRef = useRef(null);
   const transformRef = useRef(null);
   const [hoverPos, setHoverPos] = useState(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
 
-  // 1. CARGA DE DATOS
-  useEffect(() => {
-    const fetchCanvas = async () => {
-      const { data } = await supabase.from('canvas_pixels').select('*');
-      if (data) {
-        const pixelMap = {};
-        data.forEach(p => { pixelMap[`${p.x}-${p.y}`] = p.color; });
-        setPixels(pixelMap);
-      }
-    };
-    fetchCanvas();
-
-    const channel = supabase
-      .channel('canvas_live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'canvas_pixels' }, (payload) => {
-        const newPixel = payload.new;
-        if (newPixel) {
-            setPixels(prev => ({ ...prev, [`${newPixel.x}-${newPixel.y}`]: newPixel.color }));
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  // 2. ZOOM AUTOMÁTICO
+  // 1. ZOOM AUTOMÁTICO INICIAL (Visual)
   useEffect(() => {
     setTimeout(() => {
         if (transformRef.current) {
-            const { centerView } = transformRef.current;
             const initialZoom = window.innerWidth > 768 ? 1 : 0.4;
-            centerView(initialZoom);
+            transformRef.current.centerView(initialZoom);
         }
     }, 100);
   }, []);
 
-  // 3. RELOJ INTELIGENTE DE RECARGA (CORREGIDO) 🛡️🔋
-  useEffect(() => {
-    // Si ya estamos llenos, no calculamos nada
-    if (ammo >= 3) {
-        setSecondsLeft(0);
-        return;
-    }
-
-    // Función auxiliar para calcular tiempo real
-    const calculateTimeLeft = () => {
-        if (!nextRefillTime) return 0;
-        
-        const now = Date.now();
-        const target = new Date(nextRefillTime).getTime();
-        const diff = Math.ceil((target - now) / 1000);
-        
-        return diff > 0 ? diff : 0;
-    };
-
-    // Actualización inicial inmediata
-    setSecondsLeft(calculateTimeLeft());
-
-    const interval = setInterval(() => {
-        const remaining = calculateTimeLeft();
-        setSecondsLeft(remaining);
-
-        // Si el tiempo llegó a 0 y teníamos una fecha destino
-        if (remaining <= 0 && nextRefillTime) {
-            // Recarga visual optimista
-            setAmmo(prev => {
-                const nuevaAmmo = Math.min(3, prev + 1);
-                return nuevaAmmo;
-            });
-
-            // Si aún faltan balas (ej: tienes 1 y pasas a 2), reiniciamos el ciclo localmente
-            // La API es la autoridad, pero esto mantiene la UI fluida mientras tanto.
-            if (ammo < 2) { 
-                setNextRefillTime(new Date(Date.now() + 30000).toISOString());
-            } else {
-                setNextRefillTime(null);
-            }
-        }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [ammo, nextRefillTime]);
-
-
-  // 4. DIBUJAR CANVAS
+  // 2. DIBUJAR CANVAS (Visual)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    
+    // Fondo blanco base
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, GRID_SIZE, GRID_SIZE);
+    
+    // Pintar píxeles
     Object.entries(pixels).forEach(([key, color]) => {
       const [x, y] = key.split('-').map(Number);
       ctx.fillStyle = color;
@@ -121,44 +46,7 @@ export default function PlaceGame() {
     });
   }, [pixels]);
 
-  // 5. FUNCIÓN DE PINTAR
-  const paintPixel = async (x, y) => {
-    if (ammo <= 0) return;
-    if (loading) return;
-    
-    // Optimistic Update
-    const prevAmmo = ammo;
-    setAmmo(prev => prev - 1);
-    setLoading(true);
-
-    try {
-        const res = await fetch('/api/place/paint', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ x, y, color: selectedColor })
-        });
-
-        const data = await res.json();
-        
-        if (res.ok) {
-            setAmmo(data.balance);
-            if (data.nextRefill) {
-                setNextRefillTime(data.nextRefill);
-            }
-        } else {
-            // Revertir si hay error
-            if (data.balance !== undefined) setAmmo(data.balance);
-            else setAmmo(prevAmmo);
-            alert(data.error || "Error al pintar");
-        }
-    } catch (e) {
-        setAmmo(prevAmmo);
-    } finally {
-        setLoading(false);
-    }
-  };
-
-  // HANDLERS
+  // HANDLERS DE MOUSE (Visual)
   const handleMouseMove = (e) => {
     const rect = e.target.getBoundingClientRect();
     const scaleX = GRID_SIZE / rect.width;
@@ -174,15 +62,19 @@ export default function PlaceGame() {
         }
     }
   };
+
   const handleMouseDown = (e) => { dragStartPos.current = { x: e.clientX, y: e.clientY }; };
+  
   const handleMouseUp = (e) => {
     const moveX = Math.abs(e.clientX - dragStartPos.current.x);
     const moveY = Math.abs(e.clientY - dragStartPos.current.y);
-    if (moveX < 10 && moveY < 10 && hoverPos) paintPixel(hoverPos.x, hoverPos.y);
+    // Si no arrastró mucho, es un click -> PINTAR
+    if (moveX < 10 && moveY < 10 && hoverPos) {
+        paint(hoverPos.x, hoverPos.y, selectedColor);
+    }
   };
 
   return (
-    // FIX MÓVIL: h-[100dvh] asegura que ocupe la pantalla real visible
     <div className="fixed inset-0 h-[100dvh] flex flex-col bg-[#d9d4d7] touch-none overflow-hidden z-0">
       
       {/* HEADER */}
@@ -198,14 +90,12 @@ export default function PlaceGame() {
                             key={i} 
                             className={`w-4 h-6 rounded-sm border transition-all ${
                                 i <= ammo 
-                                ? 'bg-green-500 border-green-600 shadow-[0_0_8px_rgba(34,197,94,0.6)]' // Lleno
-                                : 'bg-gray-200 border-gray-300' // Vacío
+                                ? 'bg-green-500 border-green-600 shadow-[0_0_8px_rgba(34,197,94,0.6)]' 
+                                : 'bg-gray-200 border-gray-300'
                             }`}
                         />
                     ))}
                 </div>
-                
-                {/* Texto de tiempo */}
                 {ammo < 3 && (
                     <span className="text-xs font-mono font-bold text-gray-500 w-12 text-right">
                         {secondsLeft > 0 ? `+${secondsLeft}s` : '...'}
