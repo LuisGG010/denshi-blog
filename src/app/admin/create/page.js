@@ -1,8 +1,6 @@
 'use client'
 import Link from 'next/link'
-// Importamos el formulario que tú ya hiciste. 
-// Nota los ".." porque estamos dentro de admin/create/
-import NewPostForm from '../../blog/NewPostForm' 
+import NewPostForm from '@/components/admin/NewPostForm'
 
 export default function CreatePostPage() {
   return (

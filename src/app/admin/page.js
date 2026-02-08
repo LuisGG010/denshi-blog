@@ -2,8 +2,9 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import AdminList from './AdminList'
-import LogoutButton from './LogoutButton' // <--- 1. IMPORTAMOS EL BOTÓN
+import AdminList from '@/components/admin/AdminList'
+import LogoutButton from '@/components/admin/LogoutButton'
+import { ADMIN_EMAIL } from '@/lib/constants'
 
 export default async function AdminDashboard() {
   const cookieStore = await cookies() 
@@ -20,7 +21,7 @@ export default async function AdminDashboard() {
 
   const { data: { session } } = await supabase.auth.getSession()
   
-  if (!session || session.user.email !== 'luisgamer2015210@gmail.com') {
+  if (!session || session.user.email !== ADMIN_EMAIL) {
     redirect('/login')
   }
 
