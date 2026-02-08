@@ -1,16 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-// 👇 Importamos nuestras nuevas herramientas limpias
 import { deletePost, createPost, updatePost, deleteComment } from '@/lib/admin-actions'
-
-const ADMIN_EMAIL = 'luisgamer2015210@gmail.com' 
+import { ADMIN_EMAIL } from '@/lib/constants'
 
 export async function POST(request) {
   try {
     const cookieStore = await cookies()
 
-    // 1. SEGURIDAD (El Policía verifica tu identidad) 👮‍♂️
     const supabaseAuth = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -23,9 +20,9 @@ export async function POST(request) {
       }
     )
 
-    const { data: { session } } = await supabaseAuth.auth.getSession()
+    const { data: { user } } = await supabaseAuth.auth.getUser()
 
-    if (!session || session.user.email !== ADMIN_EMAIL) {
+    if (!user || user.email !== ADMIN_EMAIL) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -39,7 +36,6 @@ export async function POST(request) {
     else if (action === 'delete_comment') await deleteComment(id)
     else return NextResponse.json({ error: 'Acción no válida' }, { status: 400 })
 
-    // 3. RESPONDER ✅
     return NextResponse.json({ success: true })
 
   } catch (error) {

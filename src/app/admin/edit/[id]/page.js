@@ -1,13 +1,11 @@
 'use client'
-import { useState, useEffect, use } from 'react' // 'use' es vital en Next.js 15
+import { useState, useEffect, use } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function EditPostPage({ params }) {
-  // Desempaquetamos el ID usando 'use' (Requisito de Next.js 15)
   const { id } = use(params)
-  
   const router = useRouter()
   
   const [loading, setLoading] = useState(true)
@@ -17,12 +15,9 @@ export default function EditPostPage({ params }) {
   // 1. CARGAR DATOS (READ)
   useEffect(() => {
     const loadData = async () => {
-      // Verificar sesión
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/login')
-        return
-      }
+      // ❌ HE BORRADO LA VERIFICACIÓN DE SESIÓN AQUÍ
+      // El Middleware ya se encarga de proteger la entrada. 
+      // Si llegaste aquí, es que eres Admin.
 
       // Cargar Post
       const { data: postData } = await supabase
@@ -36,7 +31,6 @@ export default function EditPostPage({ params }) {
           title: postData.title,
           content: postData.content,
           image_url: postData.image_url || '',
-          // 👇 AQUÍ ESTÁ EL TRUCO: Leemos 'color' O 'accent_color' para que no falle
           color: postData.color || postData.accent_color || '#3b82f6'
         })
       }
@@ -53,9 +47,9 @@ export default function EditPostPage({ params }) {
       setLoading(false)
     }
     loadData()
-  }, [id, router])
+  }, [id])
 
-  // 2. GUARDAR CAMBIOS (UPDATE) - VERSIÓN DIAGNÓSTICO 🔍
+  // 2. GUARDAR CAMBIOS (UPDATE)
   const handleUpdate = async (e) => {
     e.preventDefault()
     
@@ -74,10 +68,11 @@ export default function EditPostPage({ params }) {
 
         if (res.ok) {
           alert("✅ Post actualizado correctamente")
-          router.push('/admin')
+          // Primero refrescamos los datos del navegador
           router.refresh()
+          // Luego nos vamos a la lista
+          router.push('/admin')
         } else {
-          // Si falla, esto nos dirá EXACTAMENTE por qué
           console.error("Error del servidor:", dataResponse);
           alert("❌ Error: " + (dataResponse.error || "Error desconocido"));
         }
@@ -149,7 +144,7 @@ export default function EditPostPage({ params }) {
           </div>
 
           <div className="mb-6">
-            <label className="block text-gray-400 mb-2">Contenido</label>
+            <label className="block text-gray-400 mb-2">Contenido (Markdown)</label>
             <textarea 
               className="w-full bg-gray-900 border border-gray-700 p-4 rounded h-60 font-mono focus:border-white outline-none"
               value={post.content}

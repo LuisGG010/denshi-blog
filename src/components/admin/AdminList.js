@@ -1,76 +1,103 @@
 'use client'
-
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-
-export const revalidate = 0;
+import Link from 'next/link'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function AdminList({ posts }) {
-  const router = useRouter();
+  const router = useRouter()
+  // Estado para saber cuál post se está borrando y mostrar "..."
+  const [loadingId, setLoadingId] = useState(null)
 
   const handleDelete = async (id) => {
     const confirmacion = window.confirm("¿Seguro que quieres borrar este post?");
     if (!confirmacion) return;
 
-    // 1. LLAMAMOS AL ROBOT (API) EN LUGAR DE A SUPABASE DIRECTO
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        action: 'delete_post', // Le decimos qué hacer
-        id: id 
-      }),
-    });
+    setLoadingId(id); // Activamos modo carga para este botón
 
-    const data = await res.json();
+    try {
+        const res = await fetch('/api/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'delete_post', 
+                id: id 
+            }),
+        });
 
-    // 2. VERIFICAMOS SI SALIÓ BIEN
-    if (!res.ok) alert("Error: " + data.error);
-    else router.refresh();
+        const data = await res.json();
+
+        if (!res.ok) {
+            alert("Error: " + (data.error || "Error desconocido"));
+        } else {
+            router.refresh(); // Recargamos la lista visualmente
+        }
+    } catch (error) {
+        alert("Error de conexión");
+    } finally {
+        setLoadingId(null); // Desactivamos modo carga
+    }
   };
 
+  // Si no hay posts, mostramos mensaje
+  if (!posts || posts.length === 0) {
+    return <div className="text-gray-500 text-center py-10">No hay posts todavía.</div>
+  }
+
   return (
-    <div className='w-full max-w-md mt-10 space-y-4'>
-      <h2 className='text-xl text-blue-500 font-bold border-b border-gray-700 pb-2'>
+    <div className='w-full space-y-4'>
+      <h2 className='text-xl text-blue-500 font-bold border-b border-gray-700 pb-2 mb-6'>
         Gestionar Posts ({posts.length})
       </h2>
 
       {posts.map((post) => (
-        <div key={post.id} className='bg-gray-900 p-4 rounded flex justify-between items-center border border-gray-800 gap-4'>
+        <div key={post.id} className='bg-gray-900 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-center border border-gray-800 gap-4 hover:border-gray-600 transition'>
           
-          {/* --- ZONA DE CONTENIDO (FOTO + TEXTO) --- */}
-          <div className="flex items-center gap-3 overflow-hidden">
+          {/* --- ZONA DE CONTENIDO (FOTO + TÍTULO) --- */}
+          <div className="flex items-center gap-4 overflow-hidden w-full sm:w-auto">
             
-            {/* MINIATURA DE LA IMAGEN (NUEVO) */}
-            {post.image_url && (
+            {/* MINIATURA (Tu código original mejorado) */}
+            {post.image_url ? (
               <img 
                 src={post.image_url} 
                 alt="Miniatura" 
-                className="w-12 h-12 rounded object-cover border border-gray-700 shrink-0"
+                className="w-16 h-16 rounded object-cover border border-gray-700 shrink-0"
               />
+            ) : (
+              <div className="w-16 h-16 rounded bg-gray-800 border border-gray-700 flex items-center justify-center text-2xl">
+                 📝
+              </div>
             )}
 
             {/* TEXTO DEL POST */}
-            <span className='text-gray-300 truncate'>
-              {post.content}
-            </span>
+            <div className="flex flex-col min-w-0">
+                <span className='text-white font-bold text-lg truncate'>
+                  {post.title}
+                </span>
+                <span className='text-gray-500 text-xs'>
+                  {new Date(post.created_at).toLocaleDateString()}
+                </span>
+                <span className='text-gray-400 text-sm truncate max-w-[200px] opacity-70'>
+                  {post.content}
+                </span>
+            </div>
           </div>
 
           {/* --- ZONA DE BOTONES --- */}
-          <div className='flex gap-2 shrink-0'>
+          <div className='flex gap-3 shrink-0'>
+            {/* 👇 AQUÍ ESTÁ EL ARREGLO DE LA RUTA */}
             <Link 
               href={`/admin/edit/${post.id}`}
-              className='bg-blue-900/50 text-blue-400 px-3 py-1 rounded text-sm hover:bg-blue-600 hover:text-white transition border border-blue-900/50'
+              className='bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded text-sm transition shadow-lg shadow-blue-900/20'
             >
-              Editar
+              ✏️ EDITAR
             </Link>
 
             <button
               onClick={() => handleDelete(post.id)}
-              className='bg-red-900/50 text-red-400 px-3 py-1 rounded text-sm hover:bg-red-600 hover:text-white transition border border-red-900/50'
+              disabled={loadingId === post.id}
+              className='bg-red-900/30 text-red-400 border border-red-900 hover:bg-red-900 hover:text-white px-4 py-2 rounded text-sm transition disabled:opacity-50 disabled:cursor-not-allowed'
             >
-              X
+              {loadingId === post.id ? '...' : '🗑️'}
             </button>
           </div>
 

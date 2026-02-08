@@ -1,13 +1,18 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import CommentForm from "@/components/CommentForm";
-import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
+// 👇 Importamos nuestro componente limpio
+import MarkdownView from '@/components/MarkdownView'
+
+// ❌ YA NO NECESITAMOS ESTAS LIBRERÍAS AQUÍ (Están dentro de MarkdownView)
+// import MarkdownView from '@/components/MarkdownView' <-- Ya estaba
+// import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+// import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export const revalidate = 0;
 
 export async function generateMetadata({ params }) {
+  // En Next.js 15 params es una promesa, hay que esperar
   const { id } = await params; 
   const { data: post } = await supabase.from('posts').select('*').eq('id', id).single();
   if (!post) return { title: 'Post no encontrado' };
@@ -32,33 +37,13 @@ export default async function PostPage({ params }) {
 
   if (!post) return <div className="bg-black/40 text-white text-center mt-20">Post no encontrado</div>;
 
-  const themeColor = post.color || '#3b82f6';
+  const themeColor = post.color || '#3b82f6'; // Usamos 'color' o azul por defecto
   const content = post.content; 
 
-  // --- CONFIGURACIÓN DE FECHA (Sin segundos) ---
   const dateOptions = {
-    year: 'numeric',
-    month: '2-digit', 
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false, // Ponlo en true si prefieres 4:30 PM en vez de 16:30
-    timeZone: 'America/Mexico_City' // 👈 ESTA ES LA CLAVE (Fuerza horario de México)
-  };
-
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: post.title,
-    image: post.image_url ? [post.image_url] : [], // Tu imagen destacada
-    datePublished: post.created_at,
-    dateModified: post.created_at, // O updated_at si lo tienes
-    author: [{
-        '@type': 'Person',
-        name: 'Denshi', // Tu nombre o el del autor
-        url: 'https://tudominio.com/about' // Enlace a tu perfil
-      }],
-    description: post.content.slice(0, 150) + "..." // Pequeño resumen (puedes limpiar el markdown aquí si quieres)
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+    timeZone: 'America/Mexico_City'
   };
 
   return (
@@ -79,53 +64,9 @@ export default async function PostPage({ params }) {
           className="bg-gray-900 border rounded-xl p-8 shadow-lg mb-10 overflow-hidden"
           style={{ borderColor: themeColor, boxShadow: `0 0 20px ${themeColor}20` }}
         >
+          {/* 👇 AQUÍ ESTÁ LA MAGIA: LIMPIEZA TOTAL 👇 */}
           <div className="text-xl text-white leading-relaxed markdown-content break-words">
-            
-            <ReactMarkdown
-              components={{
-                p: ({node, children, ...props}) => (
-                  <p className="mb-4 whitespace-pre-wrap" {...props}>
-                      {children}
-                  </p>
-                ),
-                code({node, inline, className, children, ...props}) {
-                  const match = /language-(\w+)/.exec(className || '')
-                  return !inline && match ? (
-                    <SyntaxHighlighter style={dracula} language={match[1]} PreTag="div" {...props}>
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <code className={`${className} bg-gray-800 rounded px-1`} {...props}>{children}</code>
-                  )
-                },
-                a: ({ node, href, children, ...props }) => {
-                  const decodedHref = decodeURIComponent(href || '');
-                  const hasColor = decodedHref.includes('color=');
-                  const hasSize = decodedHref.includes('size=');
-
-                  if (hasColor || hasSize) {
-                    let customStyle = { fontWeight: 'bold' }; 
-                    if (hasColor) {
-                      const parts = decodedHref.split('color=')[1].split('&')[0];
-                      customStyle.color = parts;
-                    }
-                    if (hasSize) {
-                      const parts = decodedHref.split('size=')[1].split('&')[0];
-                      customStyle.fontSize = isNaN(parts) ? parts : `${parts}px`;
-                      customStyle.lineHeight = '1.2'; 
-                    }
-                    return <span style={customStyle}>{children}</span>;
-                  }
-                  return (
-                      <a href={href} {...props} className="text-blue-400 hover:underline" target="_blank">
-                          {children}
-                      </a>
-                  );
-                }
-              }}
-            >
-              {content}
-            </ReactMarkdown>
+             <MarkdownView content={content} />
           </div>
 
           {post.image_url && (
@@ -140,7 +81,6 @@ export default async function PostPage({ params }) {
           )}
 
           <div className="mt-4 text-gray-500 text-sm flex justify-between items-center border-t border-gray-800 pt-4">
-              {/* 👇 FECHA DEL POST CORREGIDA 👇 */}
               <span>
                   {new Date(post.created_at).toLocaleString('es-MX', dateOptions)}
               </span>
@@ -177,7 +117,6 @@ export default async function PostPage({ params }) {
                           <span className="font-bold text-sm md:text-base mr-2" style={{ color: themeColor }}>
                               {comment.author || 'Anónimo'}
                           </span>
-                          {/* 👇 FECHA DEL COMENTARIO CORREGIDA 👇 */}
                           <span className="text-[10px] text-gray-600">
                             {new Date(comment.created_at).toLocaleString('es-MX', dateOptions)}
                           </span>
@@ -193,6 +132,7 @@ export default async function PostPage({ params }) {
           </div>
 
           <div className="bg-gray-900 p-6 rounded-lg border border-gray-800">
+            {/* Usamos el componente que movimos a /components */}
             <CommentForm postId={id} postTitle={post.title} />
           </div>
         </div>

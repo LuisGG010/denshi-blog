@@ -2,8 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import AdminList from '@/components/admin/AdminList'
-import LogoutButton from '@/components/admin/LogoutButton'
+import AdminList from '@/components/admin/AdminList' // Ruta corregida
+import LogoutButton from '@/components/admin/LogoutButton' // Ruta corregida
 import { ADMIN_EMAIL } from '@/lib/constants'
 
 export default async function AdminDashboard() {
@@ -19,9 +19,12 @@ export default async function AdminDashboard() {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // 🔴 ANTES: const { data: { session } } = await supabase.auth.getSession()
+  // 🟢 AHORA: Usamos getUser() que es seguro
+  const { data: { user } } = await supabase.auth.getUser()
   
-  if (!session || session.user.email !== ADMIN_EMAIL) {
+  // Verificamos 'user' en vez de 'session'
+  if (!user || user.email !== ADMIN_EMAIL) {
     redirect('/login')
   }
 
@@ -40,12 +43,10 @@ export default async function AdminDashboard() {
                 <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
                 PANEL DE CONTROL
                 </h1>
-                {/* 2. AGREGAMOS EL BOTÓN DEBAJO DEL TÍTULO U AL LADO */}
-                <p className="text-xs text-gray-500 mt-1">Admin: {session.user.email}</p>
+                <p className="text-xs text-gray-500 mt-1">Admin: {user.email}</p>
             </div>
 
             <div className="flex items-center gap-4">
-                {/* 3. AQUI PONEMOS EL BOTÓN DE SALIR */}
                 <LogoutButton />
                 
                 <Link 
@@ -57,7 +58,6 @@ export default async function AdminDashboard() {
             </div>
          </div>
 
-         {/* LISTA DE POSTS */}
          <AdminList posts={posts || []} />
 
       </div>
