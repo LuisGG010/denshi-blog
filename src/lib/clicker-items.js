@@ -2,20 +2,18 @@
 
 // 1. Rarezas para el Gacha (Probabilidad y Color)
 export const RARITY = {
-  COMMON: { id: 'common', name: 'Común', chance: 0.70, color: '#9ca3af' }, // Gris
-  RARE: { id: 'rare', name: 'Raro', chance: 0.20, color: '#60a5fa' },     // Azul
-  EPIC: { id: 'epic', name: 'Épico', chance: 0.08, color: '#a855f7' },     // Púrpura
-  LEGENDARY: { id: 'legendary', name: 'Legendario', chance: 0.02, color: '#fbbf24' } // Dorado
+  COMMON: { id: 'common', name: 'Común', chance: 0.70, color: '#9ca3af' },
+  RARE: { id: 'rare', name: 'Raro', chance: 0.20, color: '#60a5fa' },
+  EPIC: { id: 'epic', name: 'Épico', chance: 0.08, color: '#a855f7' },
+  LEGENDARY: { id: 'legendary', name: 'Legendario', chance: 0.02, color: '#fbbf24' }
 };
 
-// 2. Tipos de Item
 export const ITEM_TYPES = {
-  SKIN: 'skin',       // Cambia la apariencia
-  TOOL: 'tool',       // Mejora edificios
-  GLOBAL: 'global'    // Mejora todo
+  SKIN: 'skin',
+  TOOL: 'tool',
+  GLOBAL: 'global'
 };
 
-// Valor de venta (Base)
 export const SCRAP_VALUES = {
   'common': 50,
   'rare': 250,
@@ -23,38 +21,44 @@ export const SCRAP_VALUES = {
   'legendary': 5000
 };
 
-// COSTOS DE MEJORA (Nivel 0->1, 1->2, 2->3)
-export const UPGRADE_COSTS = [200, 1000, 5000]; 
+export const UPGRADE_COSTS = [200, 1000, 5000];
 
-// CURVA DE PODER (Multiplicador por Nivel 0, 1, 2, 3)
 export const LEVEL_MULTS = [1, 1.25, 1.6, 2.1];
 
-// 3. LA LISTA DE ITEMS
 export const GAME_ITEMS = {
-  // --- SKINS (Visuales + Pequeño Buff) ---
+  // --- SKINS ---
   'skin_dark_choc': {
     id: 'skin_dark_choc',
     type: ITEM_TYPES.SKIN,
     name: 'Chocolate Amargo',
-    description: '70% Cacao. Un sabor adulto.',
+    description: '70% cacao puro.',
     rarity: RARITY.COMMON,
-    multiplier: 1.02, 
+    multiplier: 1.02,
     icon: '🍫'
   },
   'skin_glaze_pink': {
     id: 'skin_glaze_pink',
     type: ITEM_TYPES.SKIN,
     name: 'Glaseado Rosa',
-    description: 'Brilla con dulzura.',
+    description: 'Dulzura extrema.',
     rarity: RARITY.COMMON,
-    multiplier: 1.03,
+    multiplier: 1.02,
     icon: '🍩'
+  },
+  'skin_mint_frost': {
+    id: 'skin_mint_frost',
+    type: ITEM_TYPES.SKIN,
+    name: 'Menta Helada',
+    description: 'Frescura productiva.',
+    rarity: RARITY.RARE,
+    multiplier: 1.05,
+    icon: '❄️'
   },
   'skin_candy_neon': {
     id: 'skin_candy_neon',
     type: ITEM_TYPES.SKIN,
     name: 'Caramelo Neón',
-    description: 'Duele a los ojos.',
+    description: 'Luces que producen.',
     rarity: RARITY.RARE,
     multiplier: 1.05,
     icon: '🌈'
@@ -63,7 +67,7 @@ export const GAME_ITEMS = {
     id: 'skin_cookie_cosmic',
     type: ITEM_TYPES.SKIN,
     name: 'Cookie Cósmica',
-    description: 'Hecha de materia estelar.',
+    description: 'Materia estelar condensada.',
     rarity: RARITY.LEGENDARY,
     multiplier: 1.15,
     icon: '🌌'
@@ -72,27 +76,27 @@ export const GAME_ITEMS = {
     id: 'skin_golden',
     type: ITEM_TYPES.SKIN,
     name: 'Galleta Dorada',
-    description: '¡Brilla tanto que ciega!',
+    description: 'Clicks bendecidos.',
     rarity: RARITY.LEGENDARY,
-    clickMultiplier: 2.0, 
+    clickMultiplier: 1.6,
     icon: '✨'
   },
 
-  // --- HERRAMIENTAS TIER 1 (Cursor & Abuela) ---
+  // --- HERRAMIENTAS T1 ---
   'tool_cursor_oil': {
     id: 'tool_cursor_oil',
     type: ITEM_TYPES.TOOL,
     name: 'Aceite de Cursor',
-    description: 'Los cursores resbalan mejor.',
+    description: 'Cursores más fluidos.',
     rarity: RARITY.COMMON,
-    targetId: 1, 
-    buff: 1.10 
+    targetId: 1,
+    buff: 1.10
   },
   'tool_cursor_spring': {
     id: 'tool_cursor_spring',
     type: ITEM_TYPES.TOOL,
     name: 'Resorte de Titanio',
-    description: 'Clicks ultra rápidos.',
+    description: 'Clicks rápidos.',
     rarity: RARITY.RARE,
     targetId: 1,
     buff: 1.25
@@ -101,98 +105,127 @@ export const GAME_ITEMS = {
     id: 'tool_grandma_glasses',
     type: ITEM_TYPES.TOOL,
     name: 'Gafas Bifocales',
-    description: 'Las abuelas ven mejor las chispas.',
+    description: 'Abuelas eficientes.',
     rarity: RARITY.RARE,
-    targetId: 2, 
+    targetId: 2,
     buff: 1.30
   },
   'tool_grandma_coffee': {
     id: 'tool_grandma_coffee',
     type: ITEM_TYPES.TOOL,
     name: 'Café Turbo',
-    description: 'Las abuelas no duermen.',
+    description: 'No duermen.',
     rarity: RARITY.EPIC,
     targetId: 2,
     buff: 1.60
   },
 
-  // --- HERRAMIENTAS TIER 2 (Granja & Mina) ---
+  // --- HERRAMIENTAS T2 ---
   'tool_farm_fertilizer': {
     id: 'tool_farm_fertilizer',
     type: ITEM_TYPES.TOOL,
     name: 'Fertilizante Dulce',
-    description: 'Las galletas crecen el doble de rápido.',
+    description: 'Crecimiento eficiente.',
     rarity: RARITY.EPIC,
-    targetId: 3, 
+    targetId: 3,
     buff: 1.45
   },
+  'tool_farm_irrigation': {
+    id: 'tool_farm_irrigation',
+    type: ITEM_TYPES.TOOL,
+    name: 'Riego Automatizado',
+    description: 'Granjas más constantes.',
+    rarity: RARITY.RARE,
+    targetId: 3,
+    buff: 1.25
+  },
+
   'tool_mine_drill': {
     id: 'tool_mine_drill',
     type: ITEM_TYPES.TOOL,
     name: 'Taladro Azucarado',
-    description: 'Extrae más cristales dulces.',
+    description: 'Minería eficiente.',
     rarity: RARITY.EPIC,
     targetId: 4,
     buff: 1.65
   },
 
-  // --- HERRAMIENTAS TIER 3 (Fábrica) ---
+  // --- HERRAMIENTAS T3 ---
   'tool_factory_robot': {
     id: 'tool_factory_robot',
     type: ITEM_TYPES.TOOL,
     name: 'Brazo Robótico',
-    description: 'Automatización perfecta.',
+    description: 'Automatización precisa.',
     rarity: RARITY.RARE,
     targetId: 5,
-    buff: 1.35 // +35% Fábrica
+    buff: 1.35
+  },
+  'tool_factory_ai': {
+    id: 'tool_factory_ai',
+    type: ITEM_TYPES.TOOL,
+    name: 'IA Industrial',
+    description: 'Optimización constante.',
+    rarity: RARITY.EPIC,
+    targetId: 5,
+    buff: 1.55
   },
 
-  // --- HERRAMIENTAS TIER 4 (Banco & Templo) ---
+  // --- HERRAMIENTAS T4 ---
   'tool_bank_interest': {
     id: 'tool_bank_interest',
     type: ITEM_TYPES.TOOL,
     name: 'Interés Compuesto',
-    description: 'El dinero llama al dinero.',
+    description: 'Economía estable.',
     rarity: RARITY.RARE,
-    targetId: 6, // Banco
+    targetId: 6,
     buff: 1.40
   },
+  'tool_bank_investor': {
+    id: 'tool_bank_investor',
+    type: ITEM_TYPES.TOOL,
+    name: 'Inversor Legendario',
+    description: 'Capital infinito.',
+    rarity: RARITY.EPIC,
+    targetId: 6,
+    buff: 1.60
+  },
+
   'tool_temple_sacrifices': {
     id: 'tool_temple_sacrifices',
     type: ITEM_TYPES.TOOL,
     name: 'Sacrificios de Azúcar',
-    description: 'Los dioses exigen dulzura.',
+    description: 'Bendiciones divinas.',
     rarity: RARITY.EPIC,
-    targetId: 7, // Templo
+    targetId: 7,
     buff: 1.55
   },
   'tool_temple_idol': {
     id: 'tool_temple_idol',
     type: ITEM_TYPES.TOOL,
     name: 'Ídolo Dorado',
-    description: 'Una estatua que llora chocolate.',
+    description: 'Fe cristalizada.',
     rarity: RARITY.LEGENDARY,
-    targetId: 7, // Templo
+    targetId: 7,
     buff: 1.85
   },
 
-  // --- HERRAMIENTAS TIER 5 (Torre de Magos) ---
+  // --- HERRAMIENTAS T5 ---
   'tool_wizard_grimoire': {
     id: 'tool_wizard_grimoire',
     type: ITEM_TYPES.TOOL,
     name: 'Grimorio Prohibido',
-    description: 'Hechizos que invocan masa oscura.',
+    description: 'Hechicería avanzada.',
     rarity: RARITY.EPIC,
-    targetId: 8, // Torre
+    targetId: 8,
     buff: 1.70
   },
 
-  // --- ITEMS GLOBALES ---
+  // --- GLOBALES ---
   'global_cookie_storm': {
     id: 'global_cookie_storm',
     type: ITEM_TYPES.GLOBAL,
     name: 'Tormenta de Galletas',
-    description: 'Multiplica TODO brutalmente.',
+    description: 'Producción mejorada.',
     rarity: RARITY.EPIC,
     multiplier: 1.20,
     icon: '🌪️'
@@ -201,7 +234,7 @@ export const GAME_ITEMS = {
     id: 'global_time_break',
     type: ITEM_TYPES.GLOBAL,
     name: 'Fractura Temporal',
-    description: 'Rompe el flujo del tiempo.',
+    description: 'Tiempo alterado.',
     rarity: RARITY.LEGENDARY,
     multiplier: 1.60,
     icon: '⏳'
@@ -210,7 +243,7 @@ export const GAME_ITEMS = {
     id: 'global_tech_magic',
     type: ITEM_TYPES.GLOBAL,
     name: 'Tecno-Magia',
-    description: 'Cuando la fábrica conoce al mago.',
+    description: 'Tecnología arcana.',
     rarity: RARITY.LEGENDARY,
     multiplier: 1.35,
     icon: '🔮'
