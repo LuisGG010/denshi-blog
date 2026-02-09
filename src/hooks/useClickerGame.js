@@ -153,7 +153,19 @@ export function useClickerGame() {
 
     // 5. ACCIONES
     const handleClick = () => {
+        // A. Valor base del click
         let clickValue = 1;
+
+        // B. BONUS DE CURSORES: Cada Cursor suma +1 al click manual
+        // Buscamos el item con id 1 (Cursor Reforzado)
+        const cursorItem = items.find(i => i.id === 1);
+        if (cursorItem) {
+            // Puedes cambiar el '1' por otro valor (ej: 0.5 o 2)
+            clickValue += cursorItem.count * 0.1; 
+        }
+
+        // C. MULTIPLICADORES (Skins / Gacha)
+        // Esto multiplica TODO (Base + Cursores)
         inventory.forEach(slot => {
             const item = GAME_ITEMS[slot.id];
             if (item && item.clickMultiplier) {
@@ -162,6 +174,8 @@ export function useClickerGame() {
                 clickValue *= finalClickMult;
             }
         });
+
+        // Aplicar
         cookiesRef.current += clickValue;
         setCookies(cookiesRef.current);
     };

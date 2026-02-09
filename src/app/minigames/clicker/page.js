@@ -12,11 +12,38 @@ export default function CookieClickerGame() {
     scrapItem, upgradeItem 
   } = useClickerGame();
 
+  // Estados visuales
   const [isSpinning, setIsSpinning] = useState(false); 
   const [lastPrize, setLastPrize] = useState(null); 
   const [selectedItemIndex, setSelectedItemIndex] = useState(null); 
+  
+  // Estado para los numeritos flotantes
+  const [clickSplashes, setClickSplashes] = useState([]);
 
-  // --- LÓGICA GACHA ---
+  // --- HELPER: CALCULAR FUERZA VISUAL DEL CLICK ---
+  const getClickStrength = () => {
+      let strength = 1;
+      // 1. Sumar Cursores (ID 1)
+      const cursorItem = items.find(i => i.id === 1);
+      if (cursorItem) strength += cursorItem.count;
+
+      // 2. Multiplicadores del Inventario
+      inventory.forEach(slot => {
+          const item = GAME_ITEMS[slot.id];
+          if (item && item.clickMultiplier) {
+              const LEVEL_MULTS = [1, 1.5, 2.5, 5.0];
+              const powerMult = LEVEL_MULTS[slot.level] || 1;
+              const finalClickMult = 1 + ((item.clickMultiplier - 1) * powerMult);
+              strength *= finalClickMult;
+          }
+      });
+      return strength;
+  };
+
+  // --- HELPER: NOMBRE DEL EDIFICIO ---
+  const getTargetName = (targetId) => items.find(b => b.id === targetId)?.name || "Edificio";
+
+  // --- GACHA ---
   const handleGacha = () => {
     if (cookies < gachaCost || isSpinning) return;
     const prize = spinGacha();
@@ -30,30 +57,52 @@ export default function CookieClickerGame() {
     }
   };
 
-  const handleVisualClick = () => {
+  // --- CLICK VISUAL CON EFECTOS ---
+  const handleVisualClick = (e) => {
+    // 1. Lógica interna (sumar galletas)
     handleClick();
+
+    // 2. Animación de la galleta gigante
     const btn = document.getElementById('big-cookie');
     if(btn) {
         btn.style.transform = 'scale(0.95)';
         setTimeout(() => btn.style.transform = 'scale(1)', 50);
     }
+
+    // 3. Crear el texto flotante (Splash)
+    // Usamos las coordenadas del mouse (e.clientX/Y) con un pequeño random
+    const id = Date.now() + Math.random();
+    const value = getClickStrength();
+    const x = e.clientX + (Math.random() * 40 - 20); 
+    const y = e.clientY + (Math.random() * 40 - 20);
+
+    const newSplash = { id, x, y, value };
+    setClickSplashes(prev => [...prev, newSplash]);
+  };
+
+  // Limpiar texto cuando termina la animación CSS
+  const removeSplash = (id) => {
+      setClickSplashes(prev => prev.filter(s => s.id !== id));
   };
 
   const renderStars = (level) => "⭐".repeat(level) + "☆".repeat(3 - level);
 
-  // --- HELPER: CONSEGUIR NOMBRE DEL EDIFICIO ---
-  const getTargetName = (targetId) => {
-      const building = items.find(b => b.id === targetId);
-      return building ? building.name : "Edificio";
-  };
-
   if (!loaded) return <div className="min-h-screen bg-black text-green-500 flex items-center justify-center font-mono">Cargando Imperio...</div>;
 
   return (
-    // 👇 AJUSTE DE LAYOUT: Usamos md:ml-64 para dejar espacio al Sidebar en PC
+    // LAYOUT PRINCIPAL: md:ml-64 deja espacio al Sidebar
     <div className='min-h-screen bg-black/90 font-sans text-white touch-none selection:bg-yellow-500/30 overflow-x-hidden'>
-
+      
+      {/* ESTILOS GLOBALES DE ANIMACIÓN */}
       <style jsx global>{`
+        @keyframes float-up {
+          0% { opacity: 1; transform: translateY(0) scale(1); }
+          100% { opacity: 0; transform: translateY(-100px) scale(1.5); }
+        }
+        .animate-float {
+            animation: float-up 0.8s forwards ease-out;
+            pointer-events: none;
+        }
         @keyframes shake {
           0% { transform: translate(1px, 1px) rotate(0deg); }
           10% { transform: translate(-1px, -2px) rotate(-1deg); }
@@ -75,7 +124,23 @@ export default function CookieClickerGame() {
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* --- PANTALLA CARGA --- */}
+      {/* --- RENDERIZADO DE SPLASHES (TEXTO FLOTANTE) --- */}
+      {clickSplashes.map(splash => (
+          <div
+            key={splash.id}
+            className="fixed z-[9999] text-2xl font-black text-white animate-float select-none"
+            style={{ 
+                left: splash.x, 
+                top: splash.y,
+                textShadow: '0px 2px 0px #000, 0px 0px 10px rgba(0,0,0,0.5)' 
+            }}
+            onAnimationEnd={() => removeSplash(splash.id)}
+          >
+              +{Math.floor(splash.value).toLocaleString()}
+          </div>
+      ))}
+
+      {/* --- PANTALLA CARGA GACHA --- */}
       {isSpinning && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 left-0 md:left-64">
             <h2 className="text-3xl font-bold text-purple-400 mb-8 animate-pulse tracking-widest text-center px-4">ABRIENDO...</h2>
@@ -108,7 +173,7 @@ export default function CookieClickerGame() {
         </div>
       )}
 
-      {/* --- MODAL DETALLES --- */}
+      {/* --- MODAL DETALLES DEL ITEM --- */}
       {selectedItemIndex !== null && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-200 px-4 left-0 md:left-64">
               {(() => {
@@ -123,10 +188,9 @@ export default function CookieClickerGame() {
                   const currentMult = LEVEL_MULTS[slot.level];
                   const nextMult = isMax ? currentMult : LEVEL_MULTS[slot.level + 1];
 
-                  // 💡 CALCULAMOS EL TEXTO BONITO AQUI
                   const getBonusText = (multVal) => {
                       if (itemData.multiplier) return `+${Math.round((itemData.multiplier - 1) * multVal * 100)}% Prod. Global`;
-                      if (itemData.buff) return `+${Math.round((itemData.buff - 1) * multVal * 100)}% ${getTargetName(itemData.targetId)}`; // 👈 NOMBRE REAL
+                      if (itemData.buff) return `+${Math.round((itemData.buff - 1) * multVal * 100)}% ${getTargetName(itemData.targetId)}`;
                       if (itemData.clickMultiplier) return `x${(1 + ((itemData.clickMultiplier - 1) * multVal)).toFixed(1)} Poder Click`;
                       return "";
                   };
@@ -196,8 +260,9 @@ export default function CookieClickerGame() {
           </div>
       )}
 
-      {/* --- HEADER --- */}
-        <div className="fixed top-0 left-0 md:left-64 right-0 bg-black/80 backdrop-blur-md p-3 md:p-4 flex justify-between items-start z-10 border-b border-white/10">         
+      {/* --- HEADER (BARRA SUPERIOR) --- */}
+      <div className="fixed top-0 left-0 md:left-64 right-0 bg-black/80 backdrop-blur-md p-3 md:p-4 flex justify-between items-start z-10 border-b border-white/10">
+         
          <div className="flex flex-col gap-2 items-start">
              <div className="flex items-center gap-3">
                  <Link href="/minigames" className="text-gray-400 hover:text-white text-sm md:text-base">← Salir</Link>
@@ -224,9 +289,10 @@ export default function CookieClickerGame() {
          </div>
       </div>
 
+      {/* --- CONTENIDO PRINCIPAL --- */}
       <div className="min-h-screen pt-28 pb-10 px-4 md:px-10 flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
         
-        {/* --- IZQUIERDA --- */}
+        {/* --- COLUMNA 1: JUEGO --- */}
         <div className="flex-1 flex flex-col items-center gap-6 md:gap-8">
             <div className="relative group mt-4 md:mt-0">
                 <button 
@@ -256,9 +322,12 @@ export default function CookieClickerGame() {
                 >
                     {isSpinning ? '...' : cookies >= gachaCost ? '¡Tirar Ruleta!' : 'Insuficiente'}
                 </button>
+                <p className="text-xs text-gray-500 mt-3">
+                    Precio = 1 Min. Prod. (Máx 10M)
+                </p>
             </div>
 
-            {/* INVENTARIO */}
+            {/* INVENTARIO (TOOLTIPS RESTAURADOS) */}
             {inventory.length > 0 && (
                 <div className="w-full max-w-md animate-in slide-in-from-bottom-5 duration-500">
                     <div className="flex justify-between items-end mb-2">
@@ -277,14 +346,13 @@ export default function CookieClickerGame() {
                             const currentMult = LEVEL_MULTS[slot.level] || 1;
                             let buffText = "";
                             if (itemData.multiplier) buffText = `+${Math.round((itemData.multiplier - 1) * currentMult * 100)}% Global`;
-                            else if (itemData.buff) buffText = `+${Math.round((itemData.buff - 1) * currentMult * 100)}% ${getTargetName(itemData.targetId)}`; // 👈 NOMBRE REAL AQUI TAMBIEN
+                            else if (itemData.buff) buffText = `+${Math.round((itemData.buff - 1) * currentMult * 100)}% ${getTargetName(itemData.targetId)}`;
                             else if (itemData.clickMultiplier) buffText = `x${(1 + ((itemData.clickMultiplier - 1) * currentMult)).toFixed(1)} Click`;
 
                             return (
                                 <button 
                                     key={idx} 
                                     onClick={() => setSelectedItemIndex(idx)}
-                                    // Tooltip activo, z-index corregido
                                     className="aspect-square bg-gray-800 rounded-lg flex items-center justify-center text-xl md:text-2xl relative group border border-white/5 hover:border-white/50 hover:bg-gray-700 hover:scale-105 active:scale-95 transition-all cursor-pointer z-0 hover:z-10"
                                 >
                                     <span className="relative z-10">{itemData.icon}</span>
@@ -296,7 +364,7 @@ export default function CookieClickerGame() {
                                         </div>
                                     )}
 
-                                    {/* TOOLTIP FLOTANTE */}
+                                    {/* TOOLTIP */}
                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 border border-gray-600 p-2 rounded-lg shadow-xl z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
                                         <div className="text-[10px] font-bold mb-0.5" style={{ color: itemData.rarity.color }}>{itemData.name}</div>
                                         <div className="text-[9px] text-gray-300 leading-tight mb-1 opacity-80">"{itemData.description}"</div>
@@ -320,7 +388,7 @@ export default function CookieClickerGame() {
             )}
         </div>
 
-        {/* --- DERECHA: Tienda --- */}
+        {/* --- COLUMNA 2: TIENDA --- */}
         <div className="flex-1 max-w-md mx-auto lg:max-w-none w-full pb-8">
           <div className="flex justify-between items-end mb-4 border-b border-gray-800 pb-2">
              <h2 className="text-lg md:text-xl font-bold text-gray-300">Edificios</h2>
