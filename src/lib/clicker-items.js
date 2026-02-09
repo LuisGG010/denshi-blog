@@ -15,7 +15,7 @@ export const ITEM_TYPES = {
   GLOBAL: 'global'    // Mejora todo
 };
 
-// Eliminar para basura
+// Valor de venta (Base)
 export const SCRAP_VALUES = {
   'common': 50,
   'rare': 250,
@@ -24,14 +24,9 @@ export const SCRAP_VALUES = {
 };
 
 // COSTOS DE MEJORA (Nivel 0->1, 1->2, 2->3)
-// Array: [Costo Nv1, Costo Nv2, Costo Nv3]
 export const UPGRADE_COSTS = [200, 1000, 5000]; 
 
-// 🔥 NUEVO: CURVA DE PODER (Multiplicador por Nivel 0, 1, 2, 3)
-// Nivel 0 = x1 (Normal)
-// Nivel 1 = x1.5 (Mejor)
-// Nivel 2 = x2.5 (Muy bueno)
-// Nivel 3 = x5.0 (¡LEGENDARIO!)
+// CURVA DE PODER (Multiplicador por Nivel 0, 1, 2, 3)
 export const LEVEL_MULTS = [1, 1.5, 2.5, 5.0];
 
 // 3. LA LISTA DE ITEMS
@@ -43,7 +38,7 @@ export const GAME_ITEMS = {
     name: 'Chocolate Amargo',
     description: '70% Cacao. Un sabor adulto.',
     rarity: RARITY.COMMON,
-    multiplier: 1.02, // +2% Producción Global
+    multiplier: 1.02, 
     icon: '🍫'
   },
   'skin_golden': {
@@ -52,19 +47,55 @@ export const GAME_ITEMS = {
     name: 'Galleta Dorada',
     description: '¡Brilla tanto que ciega!',
     rarity: RARITY.LEGENDARY,
-    clickMultiplier: 2.0, // Clicks valen x2
+    clickMultiplier: 2.0, 
     icon: '✨'
   },
+  'skin_glaze_pink': {
+    id: 'skin_glaze_pink',
+    type: ITEM_TYPES.SKIN,
+    name: 'Glaseado Rosa',
+    description: 'Brilla con dulzura.',
+    rarity: RARITY.COMMON,
+    multiplier: 1.03,
+    icon: '🍩'
+  },
+  'skin_candy_neon': {
+    id: 'skin_candy_neon',
+    type: ITEM_TYPES.SKIN,
+    name: 'Caramelo Neón',
+    description: 'Duele a los ojos.',
+    rarity: RARITY.RARE,
+    multiplier: 1.07,
+    icon: '🌈'
+  },
+  'skin_cookie_cosmic': {
+    id: 'skin_cookie_cosmic',
+    type: ITEM_TYPES.SKIN,
+    name: 'Cookie Cósmica',
+    description: 'Hecha de materia estelar.',
+    rarity: RARITY.LEGENDARY,
+    multiplier: 1.35,
+    icon: '🌌'
+  },
 
-  // --- HERRAMIENTAS (Sinergias con tus edificios) ---
+  // --- HERRAMIENTAS TIER 1 (Cursor & Abuela) ---
   'tool_cursor_oil': {
     id: 'tool_cursor_oil',
     type: ITEM_TYPES.TOOL,
     name: 'Aceite de Cursor',
     description: 'Los cursores resbalan mejor.',
     rarity: RARITY.COMMON,
-    targetId: 1, // ID del "Cursor Reforzado"
-    buff: 1.2 // +20% eficiencia
+    targetId: 1, 
+    buff: 1.2 
+  },
+  'tool_cursor_spring': {
+    id: 'tool_cursor_spring',
+    type: ITEM_TYPES.TOOL,
+    name: 'Resorte de Titanio',
+    description: 'Clicks ultra rápidos.',
+    rarity: RARITY.RARE,
+    targetId: 1,
+    buff: 1.6
   },
   'tool_grandma_glasses': {
     id: 'tool_grandma_glasses',
@@ -72,20 +103,119 @@ export const GAME_ITEMS = {
     name: 'Gafas Bifocales',
     description: 'Las abuelas ven mejor las chispas.',
     rarity: RARITY.RARE,
-    targetId: 2, // ID de la "Abuelita"
-    buff: 1.5 // +50% eficiencia
+    targetId: 2, 
+    buff: 1.5 
   },
+  'tool_grandma_coffee': {
+    id: 'tool_grandma_coffee',
+    type: ITEM_TYPES.TOOL,
+    name: 'Café Turbo',
+    description: 'Las abuelas no duermen.',
+    rarity: RARITY.EPIC,
+    targetId: 2,
+    buff: 2.2
+  },
+
+  // --- HERRAMIENTAS TIER 2 (Granja & Mina) ---
   'tool_farm_fertilizer': {
     id: 'tool_farm_fertilizer',
     type: ITEM_TYPES.TOOL,
     name: 'Fertilizante Dulce',
     description: 'Las galletas crecen el doble de rápido.',
     rarity: RARITY.EPIC,
-    targetId: 3, // ID de la "Granja"
-    buff: 2.0 // x2 eficiencia
+    targetId: 3, 
+    buff: 2.0 
+  },
+  'tool_mine_drill': {
+    id: 'tool_mine_drill',
+    type: ITEM_TYPES.TOOL,
+    name: 'Taladro Azucarado',
+    description: 'Extrae más cristales dulces.',
+    rarity: RARITY.EPIC,
+    targetId: 4,
+    buff: 2.5
+  },
+
+  // --- HERRAMIENTAS TIER 3 (Fábrica) ---
+  'tool_factory_robot': {
+    id: 'tool_factory_robot',
+    type: ITEM_TYPES.TOOL,
+    name: 'Brazo Robótico',
+    description: 'Automatización perfecta.',
+    rarity: RARITY.RARE,
+    targetId: 5,
+    buff: 1.4 // +40% Fábrica
+  },
+
+  // --- HERRAMIENTAS TIER 4 (Banco & Templo) ---
+  'tool_bank_interest': {
+    id: 'tool_bank_interest',
+    type: ITEM_TYPES.TOOL,
+    name: 'Interés Compuesto',
+    description: 'El dinero llama al dinero.',
+    rarity: RARITY.RARE,
+    targetId: 6, // Banco
+    buff: 1.5 
+  },
+  'tool_temple_sacrifices': {
+    id: 'tool_temple_sacrifices',
+    type: ITEM_TYPES.TOOL,
+    name: 'Sacrificios de Azúcar',
+    description: 'Los dioses exigen dulzura.',
+    rarity: RARITY.EPIC,
+    targetId: 7, // Templo
+    buff: 1.75
+  },
+  'tool_temple_idol': {
+    id: 'tool_temple_idol',
+    type: ITEM_TYPES.TOOL,
+    name: 'Ídolo Dorado',
+    description: 'Una estatua que llora chocolate.',
+    rarity: RARITY.LEGENDARY,
+    targetId: 7, // Templo
+    buff: 2.5
+  },
+
+  // --- HERRAMIENTAS TIER 5 (Torre de Magos) ---
+  'tool_wizard_grimoire': {
+    id: 'tool_wizard_grimoire',
+    type: ITEM_TYPES.TOOL,
+    name: 'Grimorio Prohibido',
+    description: 'Hechizos que invocan masa oscura.',
+    rarity: RARITY.EPIC,
+    targetId: 8, // Torre
+    buff: 2.0 
+  },
+
+  // --- ITEMS GLOBALES ---
+  'global_cookie_storm': {
+    id: 'global_cookie_storm',
+    type: ITEM_TYPES.GLOBAL,
+    name: 'Tormenta de Galletas',
+    description: 'Multiplica TODO brutalmente.',
+    rarity: RARITY.EPIC,
+    multiplier: 1.5,
+    icon: '🌪️'
+  },
+  'global_time_break': {
+    id: 'global_time_break',
+    type: ITEM_TYPES.GLOBAL,
+    name: 'Fractura Temporal',
+    description: 'Rompe el flujo del tiempo.',
+    rarity: RARITY.LEGENDARY,
+    multiplier: 3.0,
+    icon: '⏳'
+  },
+  'global_tech_magic': {
+    id: 'global_tech_magic',
+    type: ITEM_TYPES.GLOBAL,
+    name: 'Tecno-Magia',
+    description: 'Cuando la fábrica conoce al mago.',
+    rarity: RARITY.LEGENDARY,
+    multiplier: 2.0,
+    icon: '🔮'
   }
 };
-
 
 export const getItem = (id) => GAME_ITEMS[id];
 export const getAllItems = () => Object.values(GAME_ITEMS);

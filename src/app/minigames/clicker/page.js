@@ -12,22 +12,19 @@ export default function CookieClickerGame() {
     scrapItem, upgradeItem 
   } = useClickerGame();
 
-  // Estados visuales
   const [isSpinning, setIsSpinning] = useState(false); 
   const [lastPrize, setLastPrize] = useState(null); 
   const [selectedItemIndex, setSelectedItemIndex] = useState(null); 
   
-  // Estado para los numeritos flotantes
+  // Estado para textos flotantes
   const [clickSplashes, setClickSplashes] = useState([]);
 
-  // --- HELPER: CALCULAR FUERZA VISUAL DEL CLICK ---
+  // Calcular Fuerza Visual del Click
   const getClickStrength = () => {
       let strength = 1;
-      // 1. Sumar Cursores (ID 1)
       const cursorItem = items.find(i => i.id === 1);
-      if (cursorItem) strength += cursorItem.count;
+      if (cursorItem) strength += cursorItem.count * 1;
 
-      // 2. Multiplicadores del Inventario
       inventory.forEach(slot => {
           const item = GAME_ITEMS[slot.id];
           if (item && item.clickMultiplier) {
@@ -40,10 +37,8 @@ export default function CookieClickerGame() {
       return strength;
   };
 
-  // --- HELPER: NOMBRE DEL EDIFICIO ---
   const getTargetName = (targetId) => items.find(b => b.id === targetId)?.name || "Edificio";
 
-  // --- GACHA ---
   const handleGacha = () => {
     if (cookies < gachaCost || isSpinning) return;
     const prize = spinGacha();
@@ -57,20 +52,16 @@ export default function CookieClickerGame() {
     }
   };
 
-  // --- CLICK VISUAL CON EFECTOS ---
+  // Click Visual con Efectos
   const handleVisualClick = (e) => {
-    // 1. Lógica interna (sumar galletas)
     handleClick();
 
-    // 2. Animación de la galleta gigante
     const btn = document.getElementById('big-cookie');
     if(btn) {
         btn.style.transform = 'scale(0.95)';
         setTimeout(() => btn.style.transform = 'scale(1)', 50);
     }
 
-    // 3. Crear el texto flotante (Splash)
-    // Usamos las coordenadas del mouse (e.clientX/Y) con un pequeño random
     const id = Date.now() + Math.random();
     const value = getClickStrength();
     const x = e.clientX + (Math.random() * 40 - 20); 
@@ -80,7 +71,6 @@ export default function CookieClickerGame() {
     setClickSplashes(prev => [...prev, newSplash]);
   };
 
-  // Limpiar texto cuando termina la animación CSS
   const removeSplash = (id) => {
       setClickSplashes(prev => prev.filter(s => s.id !== id));
   };
@@ -90,10 +80,8 @@ export default function CookieClickerGame() {
   if (!loaded) return <div className="min-h-screen bg-black text-green-500 flex items-center justify-center font-mono">Cargando Imperio...</div>;
 
   return (
-    // LAYOUT PRINCIPAL: md:ml-64 deja espacio al Sidebar
     <div className='min-h-screen bg-black/90 font-sans text-white touch-none selection:bg-yellow-500/30 overflow-x-hidden'>
       
-      {/* ESTILOS GLOBALES DE ANIMACIÓN */}
       <style jsx global>{`
         @keyframes float-up {
           0% { opacity: 1; transform: translateY(0) scale(1); }
@@ -124,7 +112,7 @@ export default function CookieClickerGame() {
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* --- RENDERIZADO DE SPLASHES (TEXTO FLOTANTE) --- */}
+      {/* Textos Flotantes */}
       {clickSplashes.map(splash => (
           <div
             key={splash.id}
@@ -140,7 +128,7 @@ export default function CookieClickerGame() {
           </div>
       ))}
 
-      {/* --- PANTALLA CARGA GACHA --- */}
+      {/* Pantalla Carga */}
       {isSpinning && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 left-0 md:left-64">
             <h2 className="text-3xl font-bold text-purple-400 mb-8 animate-pulse tracking-widest text-center px-4">ABRIENDO...</h2>
@@ -149,7 +137,7 @@ export default function CookieClickerGame() {
         </div>
       )}
 
-      {/* --- PANTALLA PREMIO --- */}
+      {/* Pantalla Premio */}
       {lastPrize && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in zoom-in-50 duration-300 px-4 left-0 md:left-64">
             <div className="absolute inset-0 bg-rays opacity-30 pointer-events-none"></div>
@@ -173,7 +161,7 @@ export default function CookieClickerGame() {
         </div>
       )}
 
-      {/* --- MODAL DETALLES DEL ITEM --- */}
+      {/* Modal Detalles */}
       {selectedItemIndex !== null && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-200 px-4 left-0 md:left-64">
               {(() => {
@@ -182,7 +170,14 @@ export default function CookieClickerGame() {
                   const nextCost = UPGRADE_COSTS[slot.level];
                   const canUpgrade = slot.level < 3 && crumbs >= nextCost;
                   const isMax = slot.level >= 3;
-                  const scrapValue = SCRAP_VALUES[itemData.rarity.id] || 0;
+
+                  // Cálculo Precio Venta Seguro
+                  const baseScrap = SCRAP_VALUES[itemData.rarity.id] || 0;
+                  let invested = 0;
+                  for(let i = 0; i < slot.level; i++) {
+                      invested += UPGRADE_COSTS[i] || 0;
+                  }
+                  const scrapValue = baseScrap + Math.floor(invested * 0.5);
 
                   const LEVEL_MULTS = [1, 1.5, 2.5, 5.0]; 
                   const currentMult = LEVEL_MULTS[slot.level];
@@ -260,15 +255,13 @@ export default function CookieClickerGame() {
           </div>
       )}
 
-      {/* --- HEADER (BARRA SUPERIOR) --- */}
+      {/* Header */}
       <div className="fixed top-0 left-0 md:left-64 right-0 bg-black/80 backdrop-blur-md p-3 md:p-4 flex justify-between items-start z-10 border-b border-white/10">
-         
          <div className="flex flex-col gap-2 items-start">
              <div className="flex items-center gap-3">
                  <Link href="/minigames" className="text-gray-400 hover:text-white text-sm md:text-base">← Salir</Link>
                  <span className="text-green-500 font-mono text-[10px] md:text-xs">{isSaving ? '☁️' : '✓'}</span>
              </div>
-             
              <div className="flex items-center gap-2 bg-gray-800/80 px-3 py-1 rounded-full border border-gray-700 mt-1">
                  <span className="text-lg">🛠️</span>
                  <div className="flex flex-col leading-none">
@@ -277,7 +270,6 @@ export default function CookieClickerGame() {
                  </div>
              </div>
          </div>
-
          <div className="text-right">
              <div className="text-2xl md:text-4xl font-black text-yellow-500 leading-none">
                  {Math.floor(cookies).toLocaleString()}
@@ -289,10 +281,8 @@ export default function CookieClickerGame() {
          </div>
       </div>
 
-      {/* --- CONTENIDO PRINCIPAL --- */}
+      {/* Contenido */}
       <div className="min-h-screen pt-28 pb-10 px-4 md:px-10 flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
-        
-        {/* --- COLUMNA 1: JUEGO --- */}
         <div className="flex-1 flex flex-col items-center gap-6 md:gap-8">
             <div className="relative group mt-4 md:mt-0">
                 <button 
@@ -305,7 +295,6 @@ export default function CookieClickerGame() {
                 </button>
             </div>
 
-            {/* Caja Gacha */}
             <div className="w-full max-w-md bg-gray-900/50 border border-purple-500/30 rounded-2xl p-6 text-center shadow-lg">
                 <h3 className="text-purple-400 font-bold tracking-widest mb-2 text-sm md:text-base">🔮 CAJA MISTERIOSA</h3>
                 <div className="mb-4 text-xs md:text-sm text-purple-200 bg-purple-900/20 py-1 px-3 rounded-full inline-block">
@@ -322,12 +311,9 @@ export default function CookieClickerGame() {
                 >
                     {isSpinning ? '...' : cookies >= gachaCost ? '¡Tirar Ruleta!' : 'Insuficiente'}
                 </button>
-                <p className="text-xs text-gray-500 mt-3">
-                    Precio = 1 Min. Prod. (Máx 10M)
-                </p>
+                <p className="text-xs text-gray-500 mt-3">Precio = 1 Min. Prod. (Máx 10M)</p>
             </div>
 
-            {/* INVENTARIO (TOOLTIPS RESTAURADOS) */}
             {inventory.length > 0 && (
                 <div className="w-full max-w-md animate-in slide-in-from-bottom-5 duration-500">
                     <div className="flex justify-between items-end mb-2">
@@ -364,7 +350,6 @@ export default function CookieClickerGame() {
                                         </div>
                                     )}
 
-                                    {/* TOOLTIP */}
                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 border border-gray-600 p-2 rounded-lg shadow-xl z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
                                         <div className="text-[10px] font-bold mb-0.5" style={{ color: itemData.rarity.color }}>{itemData.name}</div>
                                         <div className="text-[9px] text-gray-300 leading-tight mb-1 opacity-80">"{itemData.description}"</div>
@@ -388,7 +373,6 @@ export default function CookieClickerGame() {
             )}
         </div>
 
-        {/* --- COLUMNA 2: TIENDA --- */}
         <div className="flex-1 max-w-md mx-auto lg:max-w-none w-full pb-8">
           <div className="flex justify-between items-end mb-4 border-b border-gray-800 pb-2">
              <h2 className="text-lg md:text-xl font-bold text-gray-300">Edificios</h2>
