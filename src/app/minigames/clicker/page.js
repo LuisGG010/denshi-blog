@@ -22,27 +22,9 @@ export default function CookieClickerGame() {
   // Calcular Fuerza Visual del Click
   const getClickStrength = () => {
       let strength = 1;
+      const cursorItem = items.find(i => i.id === 1);
+      if (cursorItem) strength += cursorItem.count * 1;
 
-      // 1. LÓGICA DE CURSORES CON SINERGIA (GUANTELETE)
-      const cursorItem = items.find(i => i.id === 1); // ID 1 = Cursor
-      if (cursorItem) {
-          let perCursorDamage = 1; // Daño base por cursor
-
-          // Buscamos si tenemos el Guantelete en el inventario
-          const gauntlet = inventory.filter(i => i.id === 'tool_cursor_gauntlet');
-          
-          if (gauntlet) {
-              // Si lo tenemos, aumenta el daño según el nivel del item
-              // Nivel 0: x1.2 | Nivel 1: x1.5 | Nivel 2: x2.0 | Nivel 3: x3.0
-              const mults = [1.2, 1.5, 2.0, 3.0];
-              perCursorDamage *= mults[gauntlet.level] || 1.2;
-          }
-
-          // Sumamos: Cantidad de Cursores * Daño por Cursor
-          strength += cursorItem.count * perCursorDamage;
-      }
-
-      // 2. MULTIPLICADORES GLOBALES (SKINS)
       inventory.forEach(slot => {
           const item = GAME_ITEMS[slot.id];
           if (item && item.clickMultiplier) {
@@ -52,7 +34,6 @@ export default function CookieClickerGame() {
               strength *= finalClickMult;
           }
       });
-
       return strength;
   };
 
