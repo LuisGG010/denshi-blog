@@ -12,19 +12,14 @@ const INITIAL_BUILDINGS = [
     { id: 3, name: 'Granja de Cookies', baseCost: 1100, cps: 8, count: 0, icon: '🚜' },
     { id: 4, name: 'Mina de Chocolate', baseCost: 12000, cps: 47, count: 0, icon: '⛏️' },
     
-    // --- TIER 3: INDUSTRIA (Aquí empieza el reto) ---
+    // --- TIER 3: INDUSTRIA ---
     { id: 5, name: 'Fábrica', baseCost: 130000, cps: 260, count: 0, icon: '🏭' },
     
-    // --- TIER 4: FINANZAS Y RELIGIÓN (NUEVOS) ---
-    // El Banco cuesta ~10 veces más que la fábrica, pero produce ~5.5 veces más.
-    // Obliga a usar upgrades.
+    // --- TIER 4: FINANZAS Y RELIGIÓN ---
     { id: 6, name: 'Banco', baseCost: 1400000, cps: 1400, count: 0, icon: '🏦' }, 
-    
-    // El Templo es un salto grande (20M). Aquí el jugador necesitará SKINS LEGENDARIAS.
     { id: 7, name: 'Templo', baseCost: 20000000, cps: 7800, count: 0, icon: '🏛️' }, 
     
-    // --- TIER 5: MAGIA (ENDGAME ACTUAL) ---
-    // La Torre es para jugadores dedicados. 
+    // --- TIER 5: MAGIA ---
     { id: 8, name: 'Torre de Magos', baseCost: 330000000, cps: 44000, count: 0, icon: '🧙‍♂️' } 
 ];
 
@@ -40,11 +35,22 @@ export function useClickerGame() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState('');
 
+    // Estados de Evento
+    const [activeEvent, setActiveEvent] = useState(null); 
+    const [bonusMultiplier, setBonusMultiplier] = useState(1); 
+    const [clickFrenzy, setClickFrenzy] = useState(1); 
+    const [eventMessage, setEventMessage] = useState(null); 
+
     const lastTimeRef = useRef(null);
     const requestRef = useRef(null);
     const cookiesRef = useRef(0);
     const inventoryRef = useRef([]); 
+    const eventTimeoutRef = useRef(null);
+    const buffTimeoutRef = useRef(null);
 
+    // 🔥 ARREGLO 1: Definir gachaCost AQUÍ (en el cuerpo principal) para poder exportarlo
+    const baseGachaCost = Math.max(5000, Math.floor(cps * 300));
+    const gachaCost = Math.min(100000000, baseGachaCost);
 
     // 1. CARGA INICIAL
     useEffect(() => {
@@ -79,10 +85,44 @@ export function useClickerGame() {
                 console.error("Error loading:", error);
             } finally {
                 setLoaded(true);
+                scheduleNextEvent();
             }
         };
         loadGame();
     }, []);
+
+    // SISTEMA DE EVENTOS (Simplificado para el ejemplo)
+    const scheduleNextEvent = () => {
+        const minTime = 60000; const maxTime = 180000;
+        const randomTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
+        setTimeout(() => spawnEventCookie(), randomTime);
+    };
+    const spawnEventCookie = () => {
+        const x = Math.random() * 80 + 10; const y = Math.random() * 80 + 10; 
+        setActiveEvent({ x, y, id: Date.now() });
+        if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
+        eventTimeoutRef.current = setTimeout(() => { setActiveEvent(null); scheduleNextEvent(); }, 15000); 
+    };
+    const triggerEventEffect = () => {
+        setActiveEvent(null);
+        if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
+        const roll = Math.random();
+        if (roll < 0.4) {
+            setBonusMultiplier(7); setEventMessage("¡FRENESÍ DE PRODUCCIÓN! (x7 CPS)");
+            if (buffTimeoutRef.current) clearTimeout(buffTimeoutRef.current);
+            buffTimeoutRef.current = setTimeout(() => { setBonusMultiplier(1); setEventMessage(null); }, 30000);
+        } else if (roll < 0.5) {
+            setClickFrenzy(777); setEventMessage("¡FRENESÍ DE CLICK! (x777 Power)");
+            if (buffTimeoutRef.current) clearTimeout(buffTimeoutRef.current);
+            buffTimeoutRef.current = setTimeout(() => { setClickFrenzy(1); setEventMessage(null); }, 10000); 
+        } else {
+            const gain = Math.max(1000, (cps * 60 * 15)); 
+            cookiesRef.current += gain; setCookies(cookiesRef.current);
+            setEventMessage(`¡SUERTE! +${Math.floor(gain).toLocaleString()} Cookies`);
+            setTimeout(() => setEventMessage(null), 3000);
+        }
+        scheduleNextEvent();
+    };
 
     // 2. CÁLCULO DE PRODUCCIÓN
     const recalculateCPS = (currentBuildings, currentInventory) => {
@@ -93,7 +133,6 @@ export function useClickerGame() {
         currentInventory.forEach(slot => {
             const item = GAME_ITEMS[slot.id];
             if (!item) return;
-
             const powerMult = LEVEL_MULTS[slot.level] || LEVEL_MULTS[LEVEL_MULTS.length - 1];
 
             if (item.multiplier) {
@@ -120,11 +159,12 @@ export function useClickerGame() {
 
     // 3. GAME LOOP
     const animate = () => {
-        if (lastTimeRef.current !== null && cps > 0) {
+        if (lastTimeRef.current !== null) {
             const now = Date.now();
             const deltaSeconds = (now - lastTimeRef.current) / 1000;
-            if (deltaSeconds > 0) {
-                cookiesRef.current += cps * deltaSeconds;
+            if (deltaSeconds > 0 && cps > 0) {
+                const effectiveCPS = cps * bonusMultiplier;
+                cookiesRef.current += effectiveCPS * deltaSeconds;
                 setCookies(cookiesRef.current);
             }
             lastTimeRef.current = now;
@@ -139,7 +179,7 @@ export function useClickerGame() {
         lastTimeRef.current = Date.now();
         requestRef.current = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(requestRef.current);
-    }, [cps, loaded]);
+    }, [cps, loaded, bonusMultiplier]);
 
     // 4. AUTO-SAVE
     useEffect(() => {
@@ -168,14 +208,9 @@ export function useClickerGame() {
     // 5. ACCIONES
     const handleClick = () => {
         let clickValue = 1;
-
-        // Bonus de Cursores (+1 por cada cursor)
         const cursorItem = items.find(i => i.id === 1);
-        if (cursorItem) {
-            clickValue += cursorItem.count * 1; 
-        }
+        if (cursorItem) clickValue += cursorItem.count * 1; 
 
-        // Multiplicadores
         inventory.forEach(slot => {
             const item = GAME_ITEMS[slot.id];
             if (item && item.clickMultiplier) {
@@ -184,7 +219,7 @@ export function useClickerGame() {
                 clickValue *= finalClickMult;
             }
         });
-
+        clickValue *= clickFrenzy;
         cookiesRef.current += clickValue;
         setCookies(cookiesRef.current);
     };
@@ -210,14 +245,10 @@ export function useClickerGame() {
             return null;
         }
 
+        // Usamos el gachaCost calculado en el scope principal
+        if (cookiesRef.current < gachaCost) return null;
 
-        // --- COSTO GACHA (Con Límite de 10M) ---
-        const baseCost = Math.max(5000, Math.floor(cps * 300));
-        const gachaCost = Math.min(100000000, baseCost);
-
-        if (cookiesRef.current < finalCost) return null;
-
-        cookiesRef.current -= finalCost;
+        cookiesRef.current -= gachaCost;
         setCookies(cookiesRef.current);
 
         const roll = Math.random();
@@ -239,30 +270,28 @@ export function useClickerGame() {
         return prize;
     };
 
-    // Helper para calcular el costo real según la rareza
+    // 🔥 ARREGLO 2: Helper para calcular costes con descuento por rareza
     const getUpgradeCost = (itemDef, level) => {
         const baseCost = UPGRADE_COSTS[level];
-        // Si no existe costMult (por si acaso), usamos 1
+        // Si es común, costMult es 0.5 (mitad de precio). Si es Legendario, x2.
         const multiplier = itemDef.rarity.costMult || 1; 
         return Math.floor(baseCost * multiplier);
     };
 
-    // --- RECICLAR CON DEPRECIACIÓN (DINÁMICO) ---
+    // 🔥 ARREGLO 3: Reciclaje usando el coste real (con descuento)
     const scrapItem = (index) => {
         const slot = inventory[index];
         const itemDef = GAME_ITEMS[slot.id];
         if(!itemDef) return;
 
-        // Valor Base
         const baseValue = SCRAP_VALUES[itemDef.rarity.id] || 10;
         
-        // Calcular inversión REAL (considerando descuento de rareza)
         let investedCrumbs = 0;
         for (let i = 0; i < slot.level; i++) {
+            // Usamos getUpgradeCost para saber cuánto pagó realmente
             investedCrumbs += getUpgradeCost(itemDef, i);
         }
 
-        // Devolver Base + 50% Inversión Real
         const totalValue = baseValue + Math.floor(investedCrumbs * 0.5);
 
         setCrumbs(prev => prev + totalValue);
@@ -273,15 +302,15 @@ export function useClickerGame() {
         recalculateCPS(items, newInventory);
     };
 
-    // --- MEJORAR ITEM (DINÁMICO) ---
+    // 🔥 ARREGLO 4: Mejora usando el coste real (con descuento)
     const upgradeItem = (index) => {
         const newInventory = [...inventory];
         const slot = newInventory[index];
-        const itemDef = GAME_ITEMS[slot.id]; // Necesitamos la data para ver la rareza
+        const itemDef = GAME_ITEMS[slot.id]; // Necesitamos datos del item
         
         if (slot.level >= 3) return;
 
-        // Usamos el helper para saber cuánto cobrar
+        // Usamos el helper
         const cost = getUpgradeCost(itemDef, slot.level);
 
         if (crumbs >= cost) {
@@ -319,7 +348,9 @@ export function useClickerGame() {
 
     return {
         cookies, crumbs, cps, items, inventory, loaded, isSaving, saveMessage,
-        handleClick, buyItem, resetGame, spinGacha, gachaCost,
-        scrapItem, upgradeItem
+        handleClick, buyItem, resetGame, spinGacha, 
+        gachaCost, // ✅ Ahora sí existe y se puede exportar
+        scrapItem, upgradeItem,
+        activeEvent, triggerEventEffect, bonusMultiplier, eventMessage, clickFrenzy
     };
 }
