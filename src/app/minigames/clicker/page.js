@@ -167,15 +167,23 @@ export default function CookieClickerGame() {
               {(() => {
                   const slot = inventory[selectedItemIndex];
                   const itemData = GAME_ITEMS[slot.id];
-                  const nextCost = UPGRADE_COSTS[slot.level];
+                  // 🔥 CÁLCULO DE COSTE DINÁMICO VISUAL
+                  // Coste del siguiente nivel
+                  const baseNextCost = UPGRADE_COSTS[slot.level] || 0;
+                  const nextCost = Math.floor(baseNextCost * itemData.rarity.costMult);
+
                   const canUpgrade = slot.level < 3 && crumbs >= nextCost;
                   const isMax = slot.level >= 3;
 
-                  // Cálculo Precio Venta Seguro
+                  
+
+                  // 🔥 CÁLCULO DE RECICLAJE DINÁMICO
                   const baseScrap = SCRAP_VALUES[itemData.rarity.id] || 0;
                   let invested = 0;
                   for(let i = 0; i < slot.level; i++) {
-                      invested += UPGRADE_COSTS[i] || 0;
+                      // Sumamos lo que costó cada nivel según la rareza
+                      const levelBaseCost = UPGRADE_COSTS[i] || 0;
+                      invested += Math.floor(levelBaseCost * itemData.rarity.costMult);
                   }
                   const scrapValue = baseScrap + Math.floor(invested * 0.5);
 

@@ -239,7 +239,15 @@ export function useClickerGame() {
         return prize;
     };
 
-    // --- RECICLAR CON DEPRECIACIÓN ---
+    // Helper para calcular el costo real según la rareza
+    const getUpgradeCost = (itemDef, level) => {
+        const baseCost = UPGRADE_COSTS[level];
+        // Si no existe costMult (por si acaso), usamos 1
+        const multiplier = itemDef.rarity.costMult || 1; 
+        return Math.floor(baseCost * multiplier);
+    };
+
+    // --- RECICLAR CON DEPRECIACIÓN (DINÁMICO) ---
     const scrapItem = (index) => {
         const slot = inventory[index];
         const itemDef = GAME_ITEMS[slot.id];
@@ -248,13 +256,13 @@ export function useClickerGame() {
         // Valor Base
         const baseValue = SCRAP_VALUES[itemDef.rarity.id] || 10;
         
-        // Calcular inversión
+        // Calcular inversión REAL (considerando descuento de rareza)
         let investedCrumbs = 0;
         for (let i = 0; i < slot.level; i++) {
-            investedCrumbs += UPGRADE_COSTS[i] || 0;
+            investedCrumbs += getUpgradeCost(itemDef, i);
         }
 
-        // Devolver Base + 50% Inversión
+        // Devolver Base + 50% Inversión Real
         const totalValue = baseValue + Math.floor(investedCrumbs * 0.5);
 
         setCrumbs(prev => prev + totalValue);
@@ -265,13 +273,17 @@ export function useClickerGame() {
         recalculateCPS(items, newInventory);
     };
 
+    // --- MEJORAR ITEM (DINÁMICO) ---
     const upgradeItem = (index) => {
         const newInventory = [...inventory];
         const slot = newInventory[index];
+        const itemDef = GAME_ITEMS[slot.id]; // Necesitamos la data para ver la rareza
         
         if (slot.level >= 3) return;
 
-        const cost = UPGRADE_COSTS[slot.level];
+        // Usamos el helper para saber cuánto cobrar
+        const cost = getUpgradeCost(itemDef, slot.level);
+
         if (crumbs >= cost) {
             setCrumbs(prev => prev - cost);
             slot.level += 1;
@@ -279,7 +291,7 @@ export function useClickerGame() {
             inventoryRef.current = newInventory;
             recalculateCPS(items, newInventory);
         } else {
-            alert(`Necesitas ${cost} Migajas para mejorar.`);
+            alert(`Necesitas ${cost} Migajas para mejorar este item.`);
         }
     };
 

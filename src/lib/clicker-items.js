@@ -2,10 +2,11 @@
 
 // 1. Rarezas para el Gacha (Probabilidad y Color)
 export const RARITY = {
-  COMMON: { id: 'common', name: 'Común', chance: 0.70, color: '#9ca3af' },
-  RARE: { id: 'rare', name: 'Raro', chance: 0.20, color: '#60a5fa' },
-  EPIC: { id: 'epic', name: 'Épico', chance: 0.08, color: '#a855f7' },
-  LEGENDARY: { id: 'legendary', name: 'Legendario', chance: 0.02, color: '#fbbf24' }
+  // 🔥 AÑADIDO: costMult para ajustar el precio de mejora según rareza
+  COMMON: { id: 'common', name: 'Común', chance: 0.70, color: '#9ca3af', costMult: 0.5 }, // Barato
+  RARE: { id: 'rare', name: 'Raro', chance: 0.20, color: '#60a5fa', costMult: 1.0 },      // Normal
+  EPIC: { id: 'epic', name: 'Épico', chance: 0.08, color: '#a855f7', costMult: 1.5 },     // Caro
+  LEGENDARY: { id: 'legendary', name: 'Legendario', chance: 0.02, color: '#fbbf24', costMult: 2.0 } // Muy caro
 };
 
 export const ITEM_TYPES = {
