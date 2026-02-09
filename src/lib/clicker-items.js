@@ -93,15 +93,6 @@ export const GAME_ITEMS = {
     targetId: 1,
     buff: 1.10
   },
-  'tool_cursor_gauntlet': {
-    id: 'tool_cursor_gauntlet',
-    type: ITEM_TYPES.TOOL,
-    name: 'Guantelete de Poder',
-    description: 'Tus cursores golpean con +20% de fuerza.',
-    rarity: RARITY.RARE,
-    targetId: 1, // ID del Cursor
-    // No usamos 'buff' estándar porque esto afecta al CLICK manual, no al CPS
-  },
   'tool_cursor_spring': {
     id: 'tool_cursor_spring',
     type: ITEM_TYPES.TOOL,
