@@ -27,7 +27,7 @@ export const SCRAP_VALUES = {
 export const UPGRADE_COSTS = [200, 1000, 5000]; 
 
 // CURVA DE PODER (Multiplicador por Nivel 0, 1, 2, 3)
-export const LEVEL_MULTS = [1, 1.5, 2.5, 5.0];
+export const LEVEL_MULTS = [1, 1.25, 1.6, 2.1];
 
 // 3. LA LISTA DE ITEMS
 export const GAME_ITEMS = {
@@ -40,15 +40,6 @@ export const GAME_ITEMS = {
     rarity: RARITY.COMMON,
     multiplier: 1.02, 
     icon: '🍫'
-  },
-  'skin_golden': {
-    id: 'skin_golden',
-    type: ITEM_TYPES.SKIN,
-    name: 'Galleta Dorada',
-    description: '¡Brilla tanto que ciega!',
-    rarity: RARITY.LEGENDARY,
-    clickMultiplier: 2.0, 
-    icon: '✨'
   },
   'skin_glaze_pink': {
     id: 'skin_glaze_pink',
@@ -65,7 +56,7 @@ export const GAME_ITEMS = {
     name: 'Caramelo Neón',
     description: 'Duele a los ojos.',
     rarity: RARITY.RARE,
-    multiplier: 1.07,
+    multiplier: 1.05,
     icon: '🌈'
   },
   'skin_cookie_cosmic': {
@@ -74,8 +65,17 @@ export const GAME_ITEMS = {
     name: 'Cookie Cósmica',
     description: 'Hecha de materia estelar.',
     rarity: RARITY.LEGENDARY,
-    multiplier: 1.35,
+    multiplier: 1.15,
     icon: '🌌'
+  },
+  'skin_golden': {
+    id: 'skin_golden',
+    type: ITEM_TYPES.SKIN,
+    name: 'Galleta Dorada',
+    description: '¡Brilla tanto que ciega!',
+    rarity: RARITY.LEGENDARY,
+    clickMultiplier: 2.0, 
+    icon: '✨'
   },
 
   // --- HERRAMIENTAS TIER 1 (Cursor & Abuela) ---
@@ -86,7 +86,7 @@ export const GAME_ITEMS = {
     description: 'Los cursores resbalan mejor.',
     rarity: RARITY.COMMON,
     targetId: 1, 
-    buff: 1.2 
+    buff: 1.10 
   },
   'tool_cursor_spring': {
     id: 'tool_cursor_spring',
@@ -95,7 +95,7 @@ export const GAME_ITEMS = {
     description: 'Clicks ultra rápidos.',
     rarity: RARITY.RARE,
     targetId: 1,
-    buff: 1.6
+    buff: 1.25
   },
   'tool_grandma_glasses': {
     id: 'tool_grandma_glasses',
@@ -104,7 +104,7 @@ export const GAME_ITEMS = {
     description: 'Las abuelas ven mejor las chispas.',
     rarity: RARITY.RARE,
     targetId: 2, 
-    buff: 1.5 
+    buff: 1.30
   },
   'tool_grandma_coffee': {
     id: 'tool_grandma_coffee',
@@ -113,7 +113,7 @@ export const GAME_ITEMS = {
     description: 'Las abuelas no duermen.',
     rarity: RARITY.EPIC,
     targetId: 2,
-    buff: 2.2
+    buff: 1.60
   },
 
   // --- HERRAMIENTAS TIER 2 (Granja & Mina) ---
@@ -124,7 +124,7 @@ export const GAME_ITEMS = {
     description: 'Las galletas crecen el doble de rápido.',
     rarity: RARITY.EPIC,
     targetId: 3, 
-    buff: 2.0 
+    buff: 1.45
   },
   'tool_mine_drill': {
     id: 'tool_mine_drill',
@@ -133,7 +133,7 @@ export const GAME_ITEMS = {
     description: 'Extrae más cristales dulces.',
     rarity: RARITY.EPIC,
     targetId: 4,
-    buff: 2.5
+    buff: 1.65
   },
 
   // --- HERRAMIENTAS TIER 3 (Fábrica) ---
@@ -144,7 +144,7 @@ export const GAME_ITEMS = {
     description: 'Automatización perfecta.',
     rarity: RARITY.RARE,
     targetId: 5,
-    buff: 1.4 // +40% Fábrica
+    buff: 1.35 // +35% Fábrica
   },
 
   // --- HERRAMIENTAS TIER 4 (Banco & Templo) ---
@@ -155,7 +155,7 @@ export const GAME_ITEMS = {
     description: 'El dinero llama al dinero.',
     rarity: RARITY.RARE,
     targetId: 6, // Banco
-    buff: 1.5 
+    buff: 1.40
   },
   'tool_temple_sacrifices': {
     id: 'tool_temple_sacrifices',
@@ -164,7 +164,7 @@ export const GAME_ITEMS = {
     description: 'Los dioses exigen dulzura.',
     rarity: RARITY.EPIC,
     targetId: 7, // Templo
-    buff: 1.75
+    buff: 1.55
   },
   'tool_temple_idol': {
     id: 'tool_temple_idol',
@@ -173,7 +173,7 @@ export const GAME_ITEMS = {
     description: 'Una estatua que llora chocolate.',
     rarity: RARITY.LEGENDARY,
     targetId: 7, // Templo
-    buff: 2.5
+    buff: 1.85
   },
 
   // --- HERRAMIENTAS TIER 5 (Torre de Magos) ---
@@ -184,7 +184,7 @@ export const GAME_ITEMS = {
     description: 'Hechizos que invocan masa oscura.',
     rarity: RARITY.EPIC,
     targetId: 8, // Torre
-    buff: 2.0 
+    buff: 1.70
   },
 
   // --- ITEMS GLOBALES ---
@@ -194,7 +194,7 @@ export const GAME_ITEMS = {
     name: 'Tormenta de Galletas',
     description: 'Multiplica TODO brutalmente.',
     rarity: RARITY.EPIC,
-    multiplier: 1.5,
+    multiplier: 1.20,
     icon: '🌪️'
   },
   'global_time_break': {
@@ -203,7 +203,7 @@ export const GAME_ITEMS = {
     name: 'Fractura Temporal',
     description: 'Rompe el flujo del tiempo.',
     rarity: RARITY.LEGENDARY,
-    multiplier: 3.0,
+    multiplier: 1.60,
     icon: '⏳'
   },
   'global_tech_magic': {
@@ -212,7 +212,7 @@ export const GAME_ITEMS = {
     name: 'Tecno-Magia',
     description: 'Cuando la fábrica conoce al mago.',
     rarity: RARITY.LEGENDARY,
-    multiplier: 2.0,
+    multiplier: 1.35,
     icon: '🔮'
   }
 };
