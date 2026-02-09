@@ -45,10 +45,6 @@ export function useClickerGame() {
     const cookiesRef = useRef(0);
     const inventoryRef = useRef([]); 
 
-    // --- COSTO GACHA (Con Límite de 10M) ---
-    const baseCost = Math.max(5000, Math.floor(cps * 300));
-    const gachaCost = Math.min(100000000, baseCost);
-
 
     // 1. CARGA INICIAL
     useEffect(() => {
@@ -214,9 +210,10 @@ export function useClickerGame() {
             return null;
         }
 
-        // Recalcular costo al momento de compra
-        const currentBaseCost = Math.max(1000, Math.floor(cps * 60));
-        const finalCost = Math.min(10000000, currentBaseCost);
+
+        // --- COSTO GACHA (Con Límite de 10M) ---
+        const baseCost = Math.max(5000, Math.floor(cps * 300));
+        const gachaCost = Math.min(100000000, baseCost);
 
         if (cookiesRef.current < finalCost) return null;
 
