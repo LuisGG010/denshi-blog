@@ -79,7 +79,7 @@ export const GAME_ITEMS = {
     name: 'Galleta Dorada',
     description: 'Clicks bendecidos.',
     rarity: RARITY.LEGENDARY,
-    clickMultiplier: 1.6,
+    clickMultiplier: 2.5,
     icon: '✨'
   },
 

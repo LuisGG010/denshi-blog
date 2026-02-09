@@ -208,9 +208,31 @@ export function useClickerGame() {
     // 5. ACCIONES
     const handleClick = () => {
         let clickValue = 1;
-        const cursorItem = items.find(i => i.id === 1);
-        if (cursorItem) clickValue += cursorItem.count * 1; 
 
+        // --- LÓGICA DE CURSORES MEJORADA ---
+        const cursorItem = items.find(i => i.id === 1); // ID 1 = Cursor
+        if (cursorItem) {
+            // 1. Valor base por cursor
+            let perCursorDamage = 1; 
+
+            // 2. Buscamos si tenemos el item de sinergia
+            const gauntlet = inventory.find(i => i.id === 'tool_cursor_gauntlet');
+            
+            if (gauntlet) {
+                // Definimos los multiplicadores por nivel (0, 1, 2, 3)
+                // Nivel 0 = x1.2 (+20%)
+                // Nivel 1 = x1.5 (+50%)
+                // Nivel 2 = x2.0 (+100%)
+                // Nivel 3 = x3.0 (+200%)
+                const mults = [1.2, 1.5, 2.0, 3.0];
+                perCursorDamage *= mults[gauntlet.level] || 1.2;
+            }
+
+            // 3. Sumamos al click total
+            clickValue += cursorItem.count * perCursorDamage; 
+        }
+
+        // --- RESTO DE MULTIPLICADORES GLOBALES (Igual que antes) ---
         inventory.forEach(slot => {
             const item = GAME_ITEMS[slot.id];
             if (item && item.clickMultiplier) {
@@ -219,7 +241,10 @@ export function useClickerGame() {
                 clickValue *= finalClickMult;
             }
         });
+
+        // Click Frenzy (Evento)
         clickValue *= clickFrenzy;
+
         cookiesRef.current += clickValue;
         setCookies(cookiesRef.current);
     };
