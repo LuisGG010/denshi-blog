@@ -109,7 +109,8 @@ export const GAME_ITEMS = {
     description: 'Clicks rápidos.',
     rarity: RARITY.RARE,
     targetId: 1,
-    buff: 1.25
+    buff: 1.25,
+    clickMultiplier: 1.05
   },
   'tool_grandma_glasses': {
     id: 'tool_grandma_glasses',
