@@ -27,7 +27,7 @@ export function useClickerGame() {
     const inventoryRef = useRef([]); 
 
     // Costo del Gacha (Dinámico)
-    const gachaCost = Math.max(1000, Math.floor(cps * 100));
+    const gachaCost = Math.max(1000, Math.floor(cps * 50));
 
     // 1. CARGA INICIAL
     useEffect(() => {
