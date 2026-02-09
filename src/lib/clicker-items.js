@@ -247,7 +247,7 @@ export const GAME_ITEMS = {
     name: 'Tecno-Magia',
     description: 'Tecnología arcana.',
     rarity: RARITY.LEGENDARY,
-    multiplier: 1.35,
+    multiplier: 1.50,
     icon: '🔮'
   }
 };

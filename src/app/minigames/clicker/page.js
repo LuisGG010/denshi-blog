@@ -167,21 +167,17 @@ export default function CookieClickerGame() {
               {(() => {
                   const slot = inventory[selectedItemIndex];
                   const itemData = GAME_ITEMS[slot.id];
-                  // 🔥 CÁLCULO DE COSTE DINÁMICO VISUAL
-                  // Coste del siguiente nivel
+                  
+                  // Cálculos de coste
                   const baseNextCost = UPGRADE_COSTS[slot.level] || 0;
                   const nextCost = Math.floor(baseNextCost * itemData.rarity.costMult);
-
                   const canUpgrade = slot.level < 3 && crumbs >= nextCost;
                   const isMax = slot.level >= 3;
 
-                  
-
-                  // 🔥 CÁLCULO DE RECICLAJE DINÁMICO
+                  // Cálculos de reciclaje
                   const baseScrap = SCRAP_VALUES[itemData.rarity.id] || 0;
                   let invested = 0;
                   for(let i = 0; i < slot.level; i++) {
-                      // Sumamos lo que costó cada nivel según la rareza
                       const levelBaseCost = UPGRADE_COSTS[i] || 0;
                       invested += Math.floor(levelBaseCost * itemData.rarity.costMult);
                   }
@@ -199,65 +195,73 @@ export default function CookieClickerGame() {
                   };
 
                   return (
-                    <div className="bg-gray-900 border-2 border-gray-600 p-6 md:p-8 rounded-2xl max-w-sm w-full relative shadow-[0_0_50px_rgba(0,0,0,0.8)]">
-                        <button onClick={() => setSelectedItemIndex(null)} className="absolute top-2 right-2 md:top-4 md:right-4 text-gray-400 hover:text-white p-2">✕</button>
-                        
-                        <div className="flex flex-col items-center text-center">
-                            <div className="text-7xl mb-4 relative filter drop-shadow-xl animate-bounce-slow">
-                                {itemData.icon}
-                                {slot.level > 0 && <span className="absolute -bottom-2 -right-2 bg-yellow-600 text-sm font-bold px-2 py-0.5 rounded-full border border-yellow-400 shadow-lg">Nvl {slot.level}</span>}
-                            </div>
-                            
-                            <h2 className="text-xl md:text-2xl font-bold mb-1" style={{ color: itemData.rarity.color }}>{itemData.name}</h2>
-                            <p className="text-yellow-500 text-xs tracking-[0.2em] mb-4">{renderStars(slot.level)}</p>
-                            
-                            <div className="bg-black/40 rounded-lg p-3 w-full mb-6 border border-white/5">
-                                <div className="flex justify-between items-center text-sm mb-2">
-                                    <span className="text-gray-400">Actual:</span>
-                                    <span className="font-bold text-green-400">{getBonusText(currentMult)}</span>
-                                </div>
-                                {!isMax && (
-                                    <>
-                                        <div className="w-full h-px bg-white/10 my-2"></div>
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-gray-400">Siguiente:</span>
-                                            <span className="font-bold text-yellow-400 animate-pulse">{getBonusText(nextMult)}</span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+                  <div className="bg-gray-900 border-2 border-gray-600 p-6 md:p-8 rounded-2xl max-w-sm w-full relative shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+                      <button onClick={() => setSelectedItemIndex(null)} className="absolute top-2 right-2 md:top-4 md:right-4 text-gray-400 hover:text-white p-2">✕</button>
+                      
+                      <div className="flex flex-col items-center text-center">
+                          <div className="text-7xl mb-4 relative filter drop-shadow-xl animate-bounce-slow">
+                              {itemData.icon}
+                              {slot.level > 0 && <span className="absolute -bottom-2 -right-2 bg-yellow-600 text-sm font-bold px-2 py-0.5 rounded-full border border-yellow-400 shadow-lg">Nvl {slot.level}</span>}
+                          </div>
+                          
+                          <h2 className="text-xl md:text-2xl font-bold mb-1" style={{ color: itemData.rarity.color }}>{itemData.name}</h2>
+                          
+                          {/* 🔥 ETIQUETA DE SKIN (NUEVO) 🔥 */}
+                          {itemData.type === 'skin' && (
+                              <div className="mb-2 px-3 py-0.5 bg-pink-900/30 border border-pink-500/40 text-pink-300 text-[10px] rounded-full uppercase font-bold tracking-widest shadow-[0_0_10px_rgba(236,72,153,0.15)]">
+                                  ✨ Skin Cosmético
+                              </div>
+                          )}
 
-                            <div className="flex gap-3 w-full">
-                                <button 
-                                    onClick={() => !isMax && upgradeItem(selectedItemIndex)}
-                                    disabled={!canUpgrade && !isMax}
-                                    className={`flex-1 py-3 rounded-xl border font-bold flex flex-col items-center justify-center transition-all relative overflow-hidden group
-                                        ${isMax ? 'bg-green-900/20 border-green-500/50 text-green-500 cursor-default' : 
+                          <p className="text-yellow-500 text-xs tracking-[0.2em] mb-4">{renderStars(slot.level)}</p>
+                          
+                          <div className="bg-black/40 rounded-lg p-3 w-full mb-6 border border-white/5">
+                              <div className="flex justify-between items-center text-sm mb-2">
+                                  <span className="text-gray-400">Actual:</span>
+                                  <span className="font-bold text-green-400">{getBonusText(currentMult)}</span>
+                              </div>
+                              {!isMax && (
+                                  <>
+                                      <div className="w-full h-px bg-white/10 my-2"></div>
+                                      <div className="flex justify-between items-center text-sm">
+                                          <span className="text-gray-400">Siguiente:</span>
+                                          <span className="font-bold text-yellow-400 animate-pulse">{getBonusText(nextMult)}</span>
+                                      </div>
+                                  </>
+                              )}
+                          </div>
+
+                          <div className="flex gap-3 w-full">
+                              <button 
+                                  onClick={() => !isMax && upgradeItem(selectedItemIndex)}
+                                  disabled={!canUpgrade && !isMax}
+                                  className={`flex-1 py-3 rounded-xl border font-bold flex flex-col items-center justify-center transition-all relative overflow-hidden group
+                                      ${isMax ? 'bg-green-900/20 border-green-500/50 text-green-500 cursor-default' : 
                                           canUpgrade ? 'bg-blue-600 border-blue-400 hover:bg-blue-500 active:scale-95' : 'bg-gray-800 border-gray-700 opacity-50 cursor-not-allowed'}
-                                    `}
-                                >
-                                    {isMax ? (
-                                        <span>MAX</span>
-                                    ) : (
-                                        <>
-                                            <span className="text-xs uppercase font-black z-10">MEJORAR</span>
-                                            <div className="flex items-center gap-1 text-sm z-10">
-                                                <span>🛠️</span>
-                                                <span className={crumbs >= nextCost ? "text-white" : "text-red-300"}>{nextCost}</span>
-                                            </div>
-                                        </>
-                                    )}
-                                </button>
-                                <button 
-                                    onClick={() => { if(confirm(`¿Destruir por ${scrapValue} migajas?`)) { scrapItem(selectedItemIndex); setSelectedItemIndex(null); } }}
-                                    className="px-4 bg-red-900/20 border border-red-500/30 hover:bg-red-900/50 active:scale-95 text-red-400 rounded-xl font-bold flex flex-col items-center justify-center transition-all min-w-[80px]"
-                                >
-                                    <span className="text-xs uppercase font-bold mb-1">Reciclar</span>
-                                    <span className="text-sm flex items-center gap-1 text-white">+{scrapValue} 🛠️</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                                  `}
+                              >
+                                  {isMax ? (
+                                      <span>MAX</span>
+                                  ) : (
+                                      <>
+                                          <span className="text-xs uppercase font-black z-10">MEJORAR</span>
+                                          <div className="flex items-center gap-1 text-sm z-10">
+                                              <span>🛠️</span>
+                                              <span className={crumbs >= nextCost ? "text-white" : "text-red-300"}>{nextCost}</span>
+                                          </div>
+                                      </>
+                                  )}
+                              </button>
+                              <button 
+                                  onClick={() => { if(confirm(`¿Destruir por ${scrapValue} migajas?`)) { scrapItem(selectedItemIndex); setSelectedItemIndex(null); } }}
+                                  className="px-4 bg-red-900/20 border border-red-500/30 hover:bg-red-900/50 active:scale-95 text-red-400 rounded-xl font-bold flex flex-col items-center justify-center transition-all min-w-[80px]"
+                              >
+                                  <span className="text-xs uppercase font-bold mb-1">Reciclar</span>
+                                  <span className="text-sm flex items-center gap-1 text-white">+{scrapValue} 🛠️</span>
+                              </button>
+                          </div>
+                      </div>
+                  </div>
                   );
               })()}
           </div>
@@ -336,8 +340,11 @@ export default function CookieClickerGame() {
                             const itemData = GAME_ITEMS[slot.id];
                             if(!itemData) return null;
 
+                            const isSkin = itemData.type === 'skin';
+
                             const LEVEL_MULTS = [1, 1.5, 2.5, 5.0];
                             const currentMult = LEVEL_MULTS[slot.level] || 1;
+                            
                             let buffText = "";
                             if (itemData.multiplier) buffText = `+${Math.round((itemData.multiplier - 1) * currentMult * 100)}% Global`;
                             else if (itemData.buff) buffText = `+${Math.round((itemData.buff - 1) * currentMult * 100)}% ${getTargetName(itemData.targetId)}`;
@@ -345,9 +352,16 @@ export default function CookieClickerGame() {
 
                             return (
                                 <button 
-                                    key={idx} 
-                                    onClick={() => setSelectedItemIndex(idx)}
-                                    className="aspect-square bg-gray-800 rounded-lg flex items-center justify-center text-xl md:text-2xl relative group border border-white/5 hover:border-white/50 hover:bg-gray-700 hover:scale-105 active:scale-95 transition-all cursor-pointer z-0 hover:z-10"
+                                  key={idx} 
+                                  onClick={() => setSelectedItemIndex(idx)}
+                                  // 🔥 CLASES UNIFICADAS + CONDICIONALES
+                                  className={`aspect-square bg-gray-800 rounded-lg flex items-center justify-center text-xl md:text-2xl relative group transition-all cursor-pointer z-0 hover:z-10
+                                    hover:scale-105 active:scale-95  // 👈 ¡Aquí está la animación devuelta!
+                                    ${isSkin 
+                                      ? 'border-2 border-dashed border-pink-500/40 hover:border-pink-400' 
+                                      : 'border border-white/5 hover:border-white/50 hover:bg-gray-700'
+                                    }
+                                  `}
                                 >
                                     <span className="relative z-10">{itemData.icon}</span>
                                     <div className="absolute inset-0 rounded-lg opacity-20 group-hover:opacity-40 transition-opacity" style={{ backgroundColor: itemData.rarity.color }}></div>
