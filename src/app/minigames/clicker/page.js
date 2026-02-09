@@ -29,7 +29,7 @@ export default function CookieClickerGame() {
           let perCursorDamage = 1; // Daño base por cursor
 
           // Buscamos si tenemos el Guantelete en el inventario
-          const gauntlet = inventory.find(i => i.id === 'tool_cursor_gauntlet');
+          const gauntlet = inventory.filter(i => i.id === 'tool_cursor_gauntlet');
           
           if (gauntlet) {
               // Si lo tenemos, aumenta el daño según el nivel del item

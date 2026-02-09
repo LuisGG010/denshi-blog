@@ -216,7 +216,7 @@ export function useClickerGame() {
             let perCursorDamage = 1; 
 
             // 2. Buscamos si tenemos el item de sinergia
-            const gauntlet = inventory.find(i => i.id === 'tool_cursor_gauntlet');
+            const gauntlet = inventory.filter(i => i.id === 'tool_cursor_gauntlet');
             
             if (gauntlet) {
                 // Definimos los multiplicadores por nivel (0, 1, 2, 3)
