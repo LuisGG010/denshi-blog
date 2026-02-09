@@ -11,13 +11,12 @@ const INITIAL_BUILDINGS = [
 
 export function useClickerGame() {
     const [cookies, setCookies] = useState(0);
-    const [crumbs, setCrumbs] = useState(0); // 👈 NUEVA MONEDA: MIGAJAS
+    const [crumbs, setCrumbs] = useState(0); 
     const [cps, setCps] = useState(0); 
     const [loaded, setLoaded] = useState(false);
     const [items, setItems] = useState(INITIAL_BUILDINGS);
     const [inventory, setInventory] = useState([]); 
     
-    // Estados de UI
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState('');
 
@@ -26,8 +25,12 @@ export function useClickerGame() {
     const cookiesRef = useRef(0);
     const inventoryRef = useRef([]); 
 
-    // Costo del Gacha (Dinámico)
-    const gachaCost = Math.max(1000, Math.floor(cps * 50));
+    // --- 🔥 CAMBIO AQUÍ: LÍMITE DE 10 MILLONES ---
+    // 1. Calculamos el costo base (1 minuto de CPS o 1000 mínimo)
+    const baseCost = Math.max(1000, Math.floor(cps * 60));
+    
+    // 2. Aplicamos el TOPE MÁXIMO de 10,000,000
+    const gachaCost = Math.min(10000000, baseCost);
 
     // 1. CARGA INICIAL
     useEffect(() => {
@@ -39,17 +42,14 @@ export function useClickerGame() {
                     if (data.saveData) {
                         cookiesRef.current = data.saveData.cookies || 0;
                         setCookies(cookiesRef.current);
-                        setCrumbs(data.saveData.crumbs || 0); // Cargar Migajas
+                        setCrumbs(data.saveData.crumbs || 0);
 
-                        // Cargar Edificios
                         const loadedItems = INITIAL_BUILDINGS.map(baseItem => {
                             const savedItem = data.saveData.items.find(i => i.id === baseItem.id);
                             return savedItem ? { ...baseItem, count: savedItem.count } : baseItem;
                         });
                         setItems(loadedItems);
 
-                        // --- MIGRACIÓN DE INVENTARIO ---
-                        // Si el usuario tiene el formato viejo ["id1", "id2"], lo convertimos a objetos [{id:"id1", level:0}]
                         let rawInventory = data.saveData.inventory || [];
                         const migratedInventory = rawInventory.map(item => {
                             if (typeof item === 'string') return { id: item, level: 0 };
@@ -70,7 +70,7 @@ export function useClickerGame() {
         loadGame();
     }, []);
 
-    // 2. CÁLCULO DE PRODUCCIÓN (Con Curva de Poder)
+    // 2. CÁLCULO DE PRODUCCIÓN
     const recalculateCPS = (currentBuildings, currentInventory) => {
         let totalCPS = 0;
         let globalMultiplier = 1;
@@ -80,23 +80,17 @@ export function useClickerGame() {
             const item = GAME_ITEMS[slot.id];
             if (!item) return;
 
-            // Obtenemos el multiplicador según el nivel actual (0, 1, 2 o 3)
-            // Si por error el nivel es mayor a 3, usamos el último valor
             const powerMult = LEVEL_MULTS[slot.level] || LEVEL_MULTS[LEVEL_MULTS.length - 1];
 
-            // A. Si es un Skin que da % Global (ej: 1.01 para +1%)
             if (item.multiplier) {
-                const baseBonus = item.multiplier - 1; // 0.01
-                const finalBonus = baseBonus * powerMult; // Nv3: 0.01 * 5 = 0.05
+                const baseBonus = item.multiplier - 1; 
+                const finalBonus = baseBonus * powerMult; 
                 globalMultiplier *= (1 + finalBonus);
             }
-
-            // B. Si es una Herramienta para Edificios (ej: 1.20 para +20%)
             if (item.targetId && item.buff) {
-                const baseBonus = item.buff - 1; // 0.20
-                const finalBonus = baseBonus * powerMult; // Nv3: 0.20 * 5 = 1.00 (+100%)
+                const baseBonus = item.buff - 1; 
+                const finalBonus = baseBonus * powerMult; 
                 const finalBuff = 1 + finalBonus;
-                
                 buffs[item.targetId] = (buffs[item.targetId] || 1) * finalBuff;
             }
         });
@@ -144,9 +138,9 @@ export function useClickerGame() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         cookies: cookiesRef.current, 
-                        crumbs: crumbs, // Guardamos migajas
+                        crumbs: crumbs,
                         items: items.map(i => ({ id: i.id, count: i.count })),
-                        inventory: inventory // Guardamos estructura {id, level}
+                        inventory: inventory 
                     })
                 });
                 setSaveMessage('Guardado ✅');
@@ -157,19 +151,14 @@ export function useClickerGame() {
         return () => clearInterval(saveInterval);
     }, [items, inventory, crumbs, loaded]);
 
-    // 5. CLICK MANUAL (Con Curva de Poder)
+    // 5. ACCIONES
     const handleClick = () => {
         let clickValue = 1;
         inventory.forEach(slot => {
             const item = GAME_ITEMS[slot.id];
             if (item && item.clickMultiplier) {
-                // Aplicamos la misma curva de poder para clicks
                 const powerMult = LEVEL_MULTS[slot.level] || 1;
-                // Si la skin daba x2, a nivel 3 da x10 (2 * 5)
-                // Ojo: Para multiplicadores directos como el click, multiplicamos el valor base
-                // Si base es x2: Nv0=x2, Nv1=x3, Nv2=x5, Nv3=x10
                 const finalClickMult = 1 + ((item.clickMultiplier - 1) * powerMult);
-                
                 clickValue *= finalClickMult;
             }
         });
@@ -192,15 +181,20 @@ export function useClickerGame() {
         }
     };
 
-    // --- SISTEMA GACHA ---
+    // --- SISTEMA GACHA (CON TOPE DE PRECIO) ---
     const spinGacha = () => {
         if (inventory.length >= 30) {
-            alert("¡Inventario Lleno! (Máx 30 items). Destruye algo.");
+            alert("¡Inventario Lleno! Recicla items para seguir jugando.");
             return null;
         }
-        if (cookiesRef.current < gachaCost) return null;
 
-        cookiesRef.current -= gachaCost;
+        // Calculamos costo dinámico (REPLICAMOS LA LÓGICA DE ARRIBA PARA EL MOMENTO DEL CLICK)
+        const currentBaseCost = Math.max(1000, Math.floor(cps * 60));
+        const finalCost = Math.min(10000000, currentBaseCost);
+
+        if (cookiesRef.current < finalCost) return null;
+
+        cookiesRef.current -= finalCost;
         setCookies(cookiesRef.current);
 
         const roll = Math.random();
@@ -214,7 +208,6 @@ export function useClickerGame() {
 
         const prize = possibleItems[Math.floor(Math.random() * possibleItems.length)];
 
-        // Guardamos OBJETO con Nivel 0
         const newInventory = [...inventory, { id: prize.id, level: 0 }];
         setInventory(newInventory);
         inventoryRef.current = newInventory;
@@ -223,18 +216,14 @@ export function useClickerGame() {
         return prize;
     };
 
-    // --- NUEVO: DESTRUIR Y MEJORAR ---
-    
     const scrapItem = (index) => {
         const slot = inventory[index];
         const itemDef = GAME_ITEMS[slot.id];
         if(!itemDef) return;
 
-        // Dar Migajas
         const value = SCRAP_VALUES[itemDef.rarity.id] || 10;
         setCrumbs(prev => prev + value);
 
-        // Borrar del inventario
         const newInventory = inventory.filter((_, i) => i !== index);
         setInventory(newInventory);
         inventoryRef.current = newInventory;
@@ -245,7 +234,7 @@ export function useClickerGame() {
         const newInventory = [...inventory];
         const slot = newInventory[index];
         
-        if (slot.level >= 3) return; // Máx nivel 3
+        if (slot.level >= 3) return;
 
         const cost = UPGRADE_COSTS[slot.level];
         if (crumbs >= cost) {
@@ -284,6 +273,6 @@ export function useClickerGame() {
     return {
         cookies, crumbs, cps, items, inventory, loaded, isSaving, saveMessage,
         handleClick, buyItem, resetGame, spinGacha, gachaCost,
-        scrapItem, upgradeItem // 👈 Nuevas funciones expuestas
+        scrapItem, upgradeItem
     };
 }
