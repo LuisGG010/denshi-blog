@@ -9,14 +9,14 @@ export default function CookieClickerGame() {
     cookies, crumbs, cps, items, inventory, loaded, isSaving, saveMessage, 
     handleClick, buyItem, resetGame, 
     spinGacha, gachaCost,
-    scrapItem, upgradeItem 
+    scrapItem, upgradeItem,
+    // Datos de eventos
+    activeEvent, triggerEventEffect, bonusMultiplier, eventMessage, clickFrenzy
   } = useClickerGame();
 
   const [isSpinning, setIsSpinning] = useState(false); 
   const [lastPrize, setLastPrize] = useState(null); 
   const [selectedItemIndex, setSelectedItemIndex] = useState(null); 
-  
-  // Estado para textos flotantes
   const [clickSplashes, setClickSplashes] = useState([]);
 
   // Calcular Fuerza Visual del Click
@@ -24,6 +24,21 @@ export default function CookieClickerGame() {
       let strength = 1;
       const cursorItem = items.find(i => i.id === 1);
       if (cursorItem) strength += cursorItem.count * 1;
+
+      // Sinergia de Guantelete
+      const cursorItemRef = items.find(i => i.id === 1);
+      if (cursorItemRef) {
+          let perCursor = 1;
+          const gauntlets = inventory.filter(i => i.id === 'tool_cursor_gauntlet');
+          gauntlets.forEach(gauntlet => {
+              const mults = [1.2, 1.5, 2.0, 3.0];
+              perCursor *= mults[gauntlet.level] || 1.2;
+          });
+          if (gauntlets.length > 0) {
+             strength -= cursorItem.count * 1; 
+             strength += cursorItem.count * perCursor; 
+          }
+      }
 
       inventory.forEach(slot => {
           const item = GAME_ITEMS[slot.id];
@@ -34,6 +49,8 @@ export default function CookieClickerGame() {
               strength *= finalClickMult;
           }
       });
+      
+      if (clickFrenzy) strength *= clickFrenzy;
       return strength;
   };
 
@@ -52,83 +69,78 @@ export default function CookieClickerGame() {
     }
   };
 
-  // Click Visual con Efectos
   const handleVisualClick = (e) => {
+    // Evitar scroll o zoom en doble tap rápido en móbiles
+    e.preventDefault(); 
+    
     handleClick();
-
     const btn = document.getElementById('big-cookie');
     if(btn) {
         btn.style.transform = 'scale(0.95)';
         setTimeout(() => btn.style.transform = 'scale(1)', 50);
     }
-
     const id = Date.now() + Math.random();
     const value = getClickStrength();
-    const x = e.clientX + (Math.random() * 40 - 20); 
-    const y = e.clientY + (Math.random() * 40 - 20);
+    
+    // Soporte para Touch Event (si e.clientX no existe)
+    const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : window.innerWidth / 2);
+    const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : window.innerHeight / 2);
 
-    const newSplash = { id, x, y, value };
-    setClickSplashes(prev => [...prev, newSplash]);
+    // Randomizar un poco la posición
+    const x = clientX + (Math.random() * 40 - 20); 
+    const y = clientY + (Math.random() * 40 - 20);
+    setClickSplashes(prev => [...prev, { id, x, y, value }]);
   };
 
-  const removeSplash = (id) => {
-      setClickSplashes(prev => prev.filter(s => s.id !== id));
-  };
-
+  const removeSplash = (id) => setClickSplashes(prev => prev.filter(s => s.id !== id));
   const renderStars = (level) => "⭐".repeat(level) + "☆".repeat(3 - level);
 
   if (!loaded) return <div className="min-h-screen bg-black text-green-500 flex items-center justify-center font-mono">Cargando Imperio...</div>;
 
   return (
-    <div className='min-h-screen bg-black/90 font-sans text-white touch-none selection:bg-yellow-500/30 overflow-x-hidden'>
+    // 🔥 CAMBIO 1: Quitamos 'touch-none' global para permitir scroll en la lista de edificios
+    <div className='min-h-screen bg-black/90 font-sans text-white selection:bg-yellow-500/30 overflow-x-hidden'>
       
       <style jsx global>{`
-        @keyframes float-up {
-          0% { opacity: 1; transform: translateY(0) scale(1); }
-          100% { opacity: 0; transform: translateY(-100px) scale(1.5); }
-        }
-        .animate-float {
-            animation: float-up 0.8s forwards ease-out;
-            pointer-events: none;
-        }
-        @keyframes shake {
-          0% { transform: translate(1px, 1px) rotate(0deg); }
-          10% { transform: translate(-1px, -2px) rotate(-1deg); }
-          20% { transform: translate(-3px, 0px) rotate(1deg); }
-          30% { transform: translate(3px, 2px) rotate(0deg); }
-          40% { transform: translate(1px, -1px) rotate(1deg); }
-          50% { transform: translate(-1px, 2px) rotate(-1deg); }
-          60% { transform: translate(-3px, 1px) rotate(0deg); }
-          70% { transform: translate(3px, 1px) rotate(-1deg); }
-          80% { transform: translate(-1px, -1px) rotate(1deg); }
-          90% { transform: translate(1px, 2px) rotate(0deg); }
-          100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
+        @keyframes float-up { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-100px) scale(1.5); } }
+        .animate-float { animation: float-up 0.8s forwards ease-out; pointer-events: none; }
+        
+        @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 215, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); } }
+        .animate-pulse-gold { animation: pulse-gold 2s infinite; }
+        @keyframes spawn-pop { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
         .animate-shake { animation: shake 0.5s infinite; }
-        .bg-rays {
-            background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.1) 0deg 20deg, transparent 20deg 40deg);
-            animation: spin-slow 10s linear infinite;
-        }
+        .bg-rays { background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.1) 0deg 20deg, transparent 20deg 40deg); animation: spin-slow 10s linear infinite; }
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* Textos Flotantes */}
-      {clickSplashes.map(splash => (
-          <div
-            key={splash.id}
-            className="fixed z-[9999] text-2xl font-black text-white animate-float select-none"
-            style={{ 
-                left: splash.x, 
-                top: splash.y,
-                textShadow: '0px 2px 0px #000, 0px 0px 10px rgba(0,0,0,0.5)' 
-            }}
-            onAnimationEnd={() => removeSplash(splash.id)}
+      {/* Galleta Dorada */}
+      {activeEvent && (
+          <button
+            // 🔥 'touch-none' aquí para evitar scroll al intentar atraparla
+            className="fixed z-50 text-6xl cursor-pointer hover:scale-110 active:scale-95 transition-transform animate-pulse-gold touch-none"
+            style={{ top: `${activeEvent.y}%`, left: `${activeEvent.x}%`, animation: 'spawn-pop 0.5s ease-out, pulse-gold 2s infinite' }}
+            onClick={(e) => { e.stopPropagation(); triggerEventEffect(); }}
+            onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); triggerEventEffect(); }}
           >
+              ✨🍪✨
+          </button>
+      )}
+
+      {/* Mensaje Evento */}
+      {eventMessage && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-black px-8 py-3 rounded-full text-xl shadow-[0_0_20px_rgba(255,215,0,0.6)] animate-in slide-in-from-top-10 fade-in duration-300 whitespace-nowrap">
+              {eventMessage}
+          </div>
+      )}
+
+      {clickSplashes.map(splash => (
+          <div key={splash.id} className="fixed z-[9999] text-2xl font-black text-white animate-float select-none pointer-events-none" style={{ left: splash.x, top: splash.y, textShadow: '0px 2px 0px #000' }}>
               +{Math.floor(splash.value).toLocaleString()}
           </div>
       ))}
 
-      {/* Pantalla Carga */}
       {isSpinning && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 left-0 md:left-64">
             <h2 className="text-3xl font-bold text-purple-400 mb-8 animate-pulse tracking-widest text-center px-4">ABRIENDO...</h2>
@@ -137,44 +149,34 @@ export default function CookieClickerGame() {
         </div>
       )}
 
-      {/* Pantalla Premio */}
       {lastPrize && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in zoom-in-50 duration-300 px-4 left-0 md:left-64">
             <div className="absolute inset-0 bg-rays opacity-30 pointer-events-none"></div>
-            
             <div className="relative bg-gray-900 border-4 p-6 md:p-8 rounded-3xl text-center shadow-[0_0_100px_rgba(255,255,255,0.2)] max-w-md w-full" style={{ borderColor: lastPrize.rarity.color }}>
                 <button onClick={() => setLastPrize(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white p-2">✕</button>
-
                 <h2 className="text-3xl md:text-4xl font-black text-white mb-2 uppercase italic tracking-tighter drop-shadow-md">¡NUEVO ITEM!</h2>
                 <div className="text-8xl md:text-9xl my-6 animate-bounce filter drop-shadow-2xl">{lastPrize.icon}</div>
-                
                 <div className="space-y-2">
                     <div className="text-2xl md:text-3xl font-bold" style={{ color: lastPrize.rarity.color }}>{lastPrize.name}</div>
-                    <div className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-white/10" style={{ color: lastPrize.rarity.color }}>
-                        {lastPrize.rarity.name}
-                    </div>
+                    <div className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-white/10" style={{ color: lastPrize.rarity.color }}>{lastPrize.rarity.name}</div>
                 </div>
-
                 <p className="text-gray-400 mt-6 text-sm max-w-xs mx-auto border-t border-gray-800 pt-4">{lastPrize.description}</p>
                 <button onClick={() => setLastPrize(null)} className="mt-8 w-full py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform">¡GENIAL!</button>
             </div>
         </div>
       )}
 
-      {/* Modal Detalles */}
       {selectedItemIndex !== null && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-200 px-4 left-0 md:left-64">
               {(() => {
                   const slot = inventory[selectedItemIndex];
                   const itemData = GAME_ITEMS[slot.id];
                   
-                  // Cálculos de coste
                   const baseNextCost = UPGRADE_COSTS[slot.level] || 0;
                   const nextCost = Math.floor(baseNextCost * itemData.rarity.costMult);
                   const canUpgrade = slot.level < 3 && crumbs >= nextCost;
                   const isMax = slot.level >= 3;
 
-                  // Cálculos de reciclaje
                   const baseScrap = SCRAP_VALUES[itemData.rarity.id] || 0;
                   let invested = 0;
                   for(let i = 0; i < slot.level; i++) {
@@ -206,7 +208,6 @@ export default function CookieClickerGame() {
                           
                           <h2 className="text-xl md:text-2xl font-bold mb-1" style={{ color: itemData.rarity.color }}>{itemData.name}</h2>
                           
-                          {/* 🔥 ETIQUETA DE SKIN (NUEVO) 🔥 */}
                           {itemData.type === 'skin' && (
                               <div className="mb-2 px-3 py-0.5 bg-pink-900/30 border border-pink-500/40 text-pink-300 text-[10px] rounded-full uppercase font-bold tracking-widest shadow-[0_0_10px_rgba(236,72,153,0.15)]">
                                   ✨ Skin Cosmético
@@ -287,20 +288,21 @@ export default function CookieClickerGame() {
                  {Math.floor(cookies).toLocaleString()}
              </div>
              <div className="text-xs text-gray-400 uppercase font-bold mb-1">Cookies</div>
-             <div className="text-xs md:text-sm text-gray-500 font-mono bg-gray-900/50 px-2 py-0.5 rounded inline-block">
-                 {cps.toFixed(1)} CPS
+             <div className={`text-xs md:text-sm text-gray-500 font-mono bg-gray-900/50 px-2 py-0.5 rounded inline-block transition-colors ${bonusMultiplier > 1 ? 'text-yellow-400 border border-yellow-500 animate-pulse' : ''}`}>
+                 {(cps * bonusMultiplier).toFixed(1)} CPS {bonusMultiplier > 1 && `(x${bonusMultiplier}🔥)`}
              </div>
          </div>
       </div>
 
-      {/* Contenido */}
       <div className="min-h-screen pt-28 pb-10 px-4 md:px-10 flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
         <div className="flex-1 flex flex-col items-center gap-6 md:gap-8">
             <div className="relative group mt-4 md:mt-0">
                 <button 
                     id="big-cookie"
+                    // 🔥 Eventos de touch específicos para móvil + touch-none para evitar zoom
+                    onTouchStart={handleVisualClick} 
                     onClick={handleVisualClick}
-                    className="text-[100px] md:text-[150px] leading-none transition-transform active:scale-95 cursor-pointer filter drop-shadow-2xl select-none"
+                    className={`text-[100px] md:text-[150px] leading-none transition-transform active:scale-95 cursor-pointer filter drop-shadow-2xl select-none touch-none ${clickFrenzy > 1 ? 'animate-bounce' : ''}`}
                     style={{ textShadow: '0 0 50px rgba(200,150,50,0.3)', WebkitTapHighlightColor: 'transparent' }}
                 >
                     🍪
@@ -335,7 +337,8 @@ export default function CookieClickerGame() {
                         </span>
                     </div>
                     
-                    <div className="grid grid-cols-5 gap-2">
+                    {/* 🔥 CAMBIO 2: Grid responsive: 4 columnas en móvil, 5 en tablet/PC */}
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                         {inventory.map((slot, idx) => {
                             const itemData = GAME_ITEMS[slot.id];
                             if(!itemData) return null;
@@ -354,9 +357,8 @@ export default function CookieClickerGame() {
                                 <button 
                                   key={idx} 
                                   onClick={() => setSelectedItemIndex(idx)}
-                                  // 🔥 CLASES UNIFICADAS + CONDICIONALES
                                   className={`aspect-square bg-gray-800 rounded-lg flex items-center justify-center text-xl md:text-2xl relative group transition-all cursor-pointer z-0 hover:z-10
-                                    hover:scale-105 active:scale-95  // 👈 ¡Aquí está la animación devuelta!
+                                    hover:scale-105 active:scale-95
                                     ${isSkin 
                                       ? 'border-2 border-dashed border-pink-500/40 hover:border-pink-400' 
                                       : 'border border-white/5 hover:border-white/50 hover:bg-gray-700'
@@ -372,7 +374,8 @@ export default function CookieClickerGame() {
                                         </div>
                                     )}
 
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 border border-gray-600 p-2 rounded-lg shadow-xl z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
+                                    {/* 🔥 CAMBIO 3: Ocultar Tooltip en móvil (molesta al tocar) */}
+                                    <div className="hidden md:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 border border-gray-600 p-2 rounded-lg shadow-xl z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
                                         <div className="text-[10px] font-bold mb-0.5" style={{ color: itemData.rarity.color }}>{itemData.name}</div>
                                         <div className="text-[9px] text-gray-300 leading-tight mb-1 opacity-80">"{itemData.description}"</div>
                                         {buffText && (
@@ -400,7 +403,8 @@ export default function CookieClickerGame() {
              <h2 className="text-lg md:text-xl font-bold text-gray-300">Edificios</h2>
              <button onClick={resetGame} className="text-xs text-red-900 hover:text-red-500 px-2 py-1">Reset</button>
           </div>
-          <div className="space-y-3 h-[400px] md:h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+          {/* 🔥 CAMBIO 4: Permitir scroll en móvil (altura automática o scroll interno) */}
+          <div className="space-y-3 h-auto max-h-[500px] md:h-[600px] overflow-y-auto pr-1 custom-scrollbar">
               {items.map(item => {
                   const currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
                   const canAfford = cookies >= currentCost;
