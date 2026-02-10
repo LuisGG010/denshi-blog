@@ -50,7 +50,7 @@ export function useClickerGame() {
 
     // 🔥 ARREGLO 1: Definir gachaCost AQUÍ (en el cuerpo principal) para poder exportarlo
     const baseGachaCost = Math.max(5000, Math.floor(cps * 300));
-    const gachaCost = Math.min(100000000, baseGachaCost);
+    const gachaCost = Math.min(1000000000, baseGachaCost);
 
     // 1. CARGA INICIAL
     useEffect(() => {
