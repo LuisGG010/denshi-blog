@@ -34,7 +34,7 @@ export const GAME_ITEMS = {
     name: 'Chocolate Amargo',
     description: '70% cacao puro.',
     rarity: RARITY.COMMON,
-    multiplier: 1.02,
+    multiplier: 1.06,
     icon: '🍫'
   },
   'skin_glaze_pink': {
@@ -43,7 +43,7 @@ export const GAME_ITEMS = {
     name: 'Glaseado Rosa',
     description: 'Dulzura extrema.',
     rarity: RARITY.COMMON,
-    multiplier: 1.02,
+    multiplier: 1.06,
     icon: '🍩'
   },
   'skin_mint_frost': {
@@ -52,7 +52,7 @@ export const GAME_ITEMS = {
     name: 'Menta Helada',
     description: 'Frescura productiva.',
     rarity: RARITY.RARE,
-    multiplier: 1.05,
+    multiplier: 1.08,
     icon: '❄️'
   },
   'skin_candy_neon': {
@@ -61,7 +61,7 @@ export const GAME_ITEMS = {
     name: 'Caramelo Neón',
     description: 'Luces que producen.',
     rarity: RARITY.RARE,
-    multiplier: 1.05,
+    multiplier: 1.09,
     icon: '🌈'
   },
   'skin_cookie_cosmic': {
@@ -70,7 +70,7 @@ export const GAME_ITEMS = {
     name: 'Cookie Cósmica',
     description: 'Materia estelar condensada.',
     rarity: RARITY.LEGENDARY,
-    multiplier: 1.15,
+    multiplier: 1.20,
     icon: '🌌'
   },
   'skin_golden': {
@@ -79,7 +79,7 @@ export const GAME_ITEMS = {
     name: 'Galleta Dorada',
     description: 'Clicks bendecidos.',
     rarity: RARITY.LEGENDARY,
-    clickMultiplier: 2.5,
+    clickMultiplier: 3.7,
     icon: '✨'
   },
 
@@ -91,7 +91,7 @@ export const GAME_ITEMS = {
     description: 'Cursores más fluidos.',
     rarity: RARITY.COMMON,
     targetId: 1,
-    buff: 1.10
+    buff: 1.25
   },
   'tool_cursor_spring': {
     id: 'tool_cursor_spring',
@@ -101,7 +101,7 @@ export const GAME_ITEMS = {
     rarity: RARITY.RARE,
     targetId: 1,
     buff: 1.25,
-    clickMultiplier: 1.05
+    clickMultiplier: 1.12
   },
   'tool_grandma_glasses': {
     id: 'tool_grandma_glasses',
@@ -119,7 +119,7 @@ export const GAME_ITEMS = {
     description: 'No duermen.',
     rarity: RARITY.EPIC,
     targetId: 2,
-    buff: 1.60
+    buff: 1.50
   },
 
   // --- HERRAMIENTAS T2 ---
@@ -139,7 +139,7 @@ export const GAME_ITEMS = {
     description: 'Granjas más constantes.',
     rarity: RARITY.RARE,
     targetId: 3,
-    buff: 1.25
+    buff: 1.30
   },
 
   'tool_mine_drill': {
@@ -149,7 +149,7 @@ export const GAME_ITEMS = {
     description: 'Minería eficiente.',
     rarity: RARITY.EPIC,
     targetId: 4,
-    buff: 1.65
+    buff: 1.60
   },
 
   // --- HERRAMIENTAS T3 ---
@@ -208,7 +208,7 @@ export const GAME_ITEMS = {
     description: 'Fe cristalizada.',
     rarity: RARITY.LEGENDARY,
     targetId: 7,
-    buff: 1.85
+    buff: 1.70
   },
 
   // --- HERRAMIENTAS T5 ---
@@ -219,7 +219,7 @@ export const GAME_ITEMS = {
     description: 'Hechicería avanzada.',
     rarity: RARITY.EPIC,
     targetId: 8,
-    buff: 1.70
+    buff: 1.45
   },
 
   // --- GLOBALES ---
@@ -229,7 +229,7 @@ export const GAME_ITEMS = {
     name: 'Tormenta de Galletas',
     description: 'Producción mejorada.',
     rarity: RARITY.EPIC,
-    multiplier: 1.20,
+    multiplier: 1.40,
     icon: '🌪️'
   },
   'global_time_break': {
@@ -238,7 +238,7 @@ export const GAME_ITEMS = {
     name: 'Fractura Temporal',
     description: 'Tiempo alterado.',
     rarity: RARITY.LEGENDARY,
-    multiplier: 1.40,
+    multiplier: 1.80,
     icon: '⏳'
   },
   'global_tech_magic': {
@@ -247,7 +247,7 @@ export const GAME_ITEMS = {
     name: 'Tecno-Magia',
     description: 'Tecnología arcana.',
     rarity: RARITY.LEGENDARY,
-    multiplier: 1.50,
+    multiplier: 1.70,
     icon: '🔮'
   }
 };

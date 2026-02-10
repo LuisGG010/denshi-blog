@@ -1,25 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { GAME_ITEMS, SCRAP_VALUES, UPGRADE_COSTS, LEVEL_MULTS } from '@/lib/clicker-items';
+import { GAME_ITEMS, SCRAP_VALUES, UPGRADE_COSTS, LEVEL_MULTS, ITEM_TYPES } from '@/lib/clicker-items';
 
 // src/hooks/useClickerGame.js
 
 const INITIAL_BUILDINGS = [
-    // --- TIER 1: INICIO RÁPIDO ---
     { id: 1, name: 'Cursor Reforzado', baseCost: 15, cps: 0.1, count: 0, icon: '👆' },
     { id: 2, name: 'Abuelita', baseCost: 100, cps: 1, count: 0, icon: '👵' },
-    
-    // --- TIER 2: LA PRIMERA EXPANSIÓN ---
     { id: 3, name: 'Granja de Cookies', baseCost: 1100, cps: 8, count: 0, icon: '🚜' },
     { id: 4, name: 'Mina de Chocolate', baseCost: 12000, cps: 47, count: 0, icon: '⛏️' },
-    
-    // --- TIER 3: INDUSTRIA ---
     { id: 5, name: 'Fábrica', baseCost: 130000, cps: 260, count: 0, icon: '🏭' },
-    
-    // --- TIER 4: FINANZAS Y RELIGIÓN ---
     { id: 6, name: 'Banco', baseCost: 1400000, cps: 1400, count: 0, icon: '🏦' }, 
     { id: 7, name: 'Templo', baseCost: 20000000, cps: 7800, count: 0, icon: '🏛️' }, 
-    
-    // --- TIER 5: MAGIA ---
     { id: 8, name: 'Torre de Magos', baseCost: 330000000, cps: 44000, count: 0, icon: '🧙‍♂️' } 
 ];
 
@@ -48,7 +39,6 @@ export function useClickerGame() {
     const eventTimeoutRef = useRef(null);
     const buffTimeoutRef = useRef(null);
 
-    // 🔥 ARREGLO 1: Definir gachaCost AQUÍ (en el cuerpo principal) para poder exportarlo
     const baseGachaCost = Math.max(5000, Math.floor(cps * 300));
     const gachaCost = Math.min(1000000000, baseGachaCost);
 
@@ -72,8 +62,10 @@ export function useClickerGame() {
 
                         let rawInventory = data.saveData.inventory || [];
                         const migratedInventory = rawInventory.map(item => {
-                            if (typeof item === 'string') return { id: item, level: 0 };
-                            return item;
+                            // Migración: Aseguramos que tenga la propiedad 'equipped'
+                            // Si es un objeto antiguo, le ponemos false por defecto.
+                            const baseItem = (typeof item === 'string') ? { id: item, level: 0 } : item;
+                            return { ...baseItem, equipped: baseItem.equipped || false };
                         });
 
                         setInventory(migratedInventory);
@@ -91,48 +83,19 @@ export function useClickerGame() {
         loadGame();
     }, []);
 
-    // SISTEMA DE EVENTOS (Simplificado para el ejemplo)
-    const scheduleNextEvent = () => {
-        const minTime = 120000; const maxTime = 360000;
-        const randomTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
-        setTimeout(() => spawnEventCookie(), randomTime);
-    };
-    const spawnEventCookie = () => {
-        const x = Math.random() * 80 + 10; const y = Math.random() * 80 + 10; 
-        setActiveEvent({ x, y, id: Date.now() });
-        if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
-        eventTimeoutRef.current = setTimeout(() => { setActiveEvent(null); scheduleNextEvent(); }, 15000); 
-    };
-    const triggerEventEffect = () => {
-        setActiveEvent(null);
-        if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
-        const roll = Math.random();
-        if (roll < 0.4) {
-            setBonusMultiplier(7); setEventMessage("¡FRENESÍ DE PRODUCCIÓN! (x7 CPS)");
-            if (buffTimeoutRef.current) clearTimeout(buffTimeoutRef.current);
-            buffTimeoutRef.current = setTimeout(() => { setBonusMultiplier(1); setEventMessage(null); }, 30000);
-        } else if (roll < 0.5) {
-            setClickFrenzy(777); setEventMessage("¡FRENESÍ DE CLICK! (x777 Power)");
-            if (buffTimeoutRef.current) clearTimeout(buffTimeoutRef.current);
-            buffTimeoutRef.current = setTimeout(() => { setClickFrenzy(1); setEventMessage(null); }, 10000); 
-        } else {
-            const gain = Math.max(1000, (cps * 15)); 
-            cookiesRef.current += gain; setCookies(cookiesRef.current);
-            setEventMessage(`¡SUERTE! +${Math.floor(gain).toLocaleString()} Cookies`);
-            setTimeout(() => setEventMessage(null), 3000);
-        }
-        scheduleNextEvent();
-    };
-
-    // 2. CÁLCULO DE PRODUCCIÓN
+    // 2. CÁLCULO DE PRODUCCIÓN (¡MODIFICADO!)
     const recalculateCPS = (currentBuildings, currentInventory) => {
         let totalCPS = 0;
         let globalMultiplier = 1;
         const buffs = {}; 
         
         currentInventory.forEach(slot => {
+            // 🔥 REGLA DE ORO: Si no está equipado, lo ignoramos
+            if (!slot.equipped) return;
+
             const item = GAME_ITEMS[slot.id];
             if (!item) return;
+
             const powerMult = LEVEL_MULTS[slot.level] || LEVEL_MULTS[LEVEL_MULTS.length - 1];
 
             if (item.multiplier) {
@@ -157,7 +120,45 @@ export function useClickerGame() {
         setCps(totalCPS * globalMultiplier);
     };
 
-    // 3. GAME LOOP
+    // 3. NUEVA FUNCIÓN: EQUIPAR / DESEQUIPAR
+    const toggleEquip = (index) => {
+        const newInventory = [...inventory];
+        const slot = newInventory[index];
+        const itemDef = GAME_ITEMS[slot.id];
+
+        // A. Si ya está equipado, lo quitamos
+        if (slot.equipped) {
+            slot.equipped = false;
+        } 
+        // B. Si queremos equiparlo, verificamos límites
+        else {
+            const isSkin = itemDef.type === ITEM_TYPES.SKIN;
+            
+            // Contamos cuántos de este tipo ya tenemos equipados
+            const currentlyEquipped = newInventory.filter(i => {
+                if (!i.equipped) return false;
+                const def = GAME_ITEMS[i.id];
+                const type = def.type;
+                if (isSkin) return type === ITEM_TYPES.SKIN;
+                return type !== ITEM_TYPES.SKIN; // Tools y Globals comparten cupo
+            });
+
+            const limit = isSkin ? 5 : 5; // 🔥 LÍMITES: 3 Skins, 5 Tools
+
+            if (currentlyEquipped.length >= limit) {
+                alert(`¡Límite alcanzado! Solo puedes equipar ${limit} items de este tipo.`);
+                return; 
+            }
+
+            slot.equipped = true;
+        }
+
+        setInventory(newInventory);
+        inventoryRef.current = newInventory;
+        recalculateCPS(items, newInventory);
+    };
+
+    // 4. GAME LOOP
     const animate = () => {
         if (lastTimeRef.current !== null) {
             const now = Date.now();
@@ -181,7 +182,7 @@ export function useClickerGame() {
         return () => cancelAnimationFrame(requestRef.current);
     }, [cps, loaded, bonusMultiplier]);
 
-    // 4. AUTO-SAVE
+    // 5. AUTO-SAVE
     useEffect(() => {
         if (!loaded) return;
         const saveInterval = setInterval(async () => {
@@ -194,7 +195,7 @@ export function useClickerGame() {
                         cookies: cookiesRef.current, 
                         crumbs: crumbs,
                         items: items.map(i => ({ id: i.id, count: i.count })),
-                        inventory: inventory 
+                        inventory: inventory // Guarda el estado 'equipped'
                     })
                 });
                 setSaveMessage('Guardado ✅');
@@ -205,20 +206,44 @@ export function useClickerGame() {
         return () => clearInterval(saveInterval);
     }, [items, inventory, crumbs, loaded]);
 
-    // 5. ACCIONES
+    // 6. ACCIONES (CLICKS MODIFICADOS)
     const handleClick = () => {
         let clickValue = 1;
         const cursorItem = items.find(i => i.id === 1);
         if (cursorItem) clickValue += cursorItem.count * 1; 
 
+        // Solo items EQUIPADOS afectan al click
         inventory.forEach(slot => {
+            if (!slot.equipped) return; // 🔥 Ignorar mochila
+
             const item = GAME_ITEMS[slot.id];
+            
+            // Saltamos el guantelete aquí, lo calculamos especial abajo
+            if (item.id === 'tool_cursor_gauntlet') return;
+
             if (item && item.clickMultiplier) {
                 const powerMult = LEVEL_MULTS[slot.level] || 1;
                 const finalClickMult = 1 + ((item.clickMultiplier - 1) * powerMult);
                 clickValue *= finalClickMult;
             }
         });
+
+        // Lógica Especial Guanteletes (Solo los equipados)
+        if (cursorItem) {
+            const equippedGauntlets = inventory.filter(i => i.id === 'tool_cursor_gauntlet' && i.equipped);
+            if(equippedGauntlets.length > 0) {
+                // Restar el valor base
+                clickValue -= cursorItem.count * 1; 
+                
+                let perCursor = 1;
+                equippedGauntlets.forEach(gauntlet => {
+                    const mults = [1.2, 1.5, 2.0, 3.0];
+                    perCursor *= mults[gauntlet.level] || 1.2;
+                });
+                clickValue += cursorItem.count * perCursor;
+            }
+        }
+
         clickValue *= clickFrenzy;
         cookiesRef.current += clickValue;
         setCookies(cookiesRef.current);
@@ -245,7 +270,6 @@ export function useClickerGame() {
             return null;
         }
 
-        // Usamos el gachaCost calculado en el scope principal
         if (cookiesRef.current < gachaCost) return null;
 
         cookiesRef.current -= gachaCost;
@@ -262,7 +286,8 @@ export function useClickerGame() {
 
         const prize = possibleItems[Math.floor(Math.random() * possibleItems.length)];
 
-        const newInventory = [...inventory, { id: prize.id, level: 0 }];
+        // Al ganar, item viene desequipado por defecto
+        const newInventory = [...inventory, { id: prize.id, level: 0, equipped: false }];
         setInventory(newInventory);
         inventoryRef.current = newInventory;
         recalculateCPS(items, newInventory);
@@ -270,47 +295,37 @@ export function useClickerGame() {
         return prize;
     };
 
-    // 🔥 ARREGLO 2: Helper para calcular costes con descuento por rareza
     const getUpgradeCost = (itemDef, level) => {
         const baseCost = UPGRADE_COSTS[level];
-        // Si es común, costMult es 0.5 (mitad de precio). Si es Legendario, x2.
         const multiplier = itemDef.rarity.costMult || 1; 
         return Math.floor(baseCost * multiplier);
     };
 
-    // 🔥 ARREGLO 3: Reciclaje usando el coste real (con descuento)
     const scrapItem = (index) => {
         const slot = inventory[index];
         const itemDef = GAME_ITEMS[slot.id];
         if(!itemDef) return;
 
         const baseValue = SCRAP_VALUES[itemDef.rarity.id] || 10;
-        
         let investedCrumbs = 0;
         for (let i = 0; i < slot.level; i++) {
-            // Usamos getUpgradeCost para saber cuánto pagó realmente
             investedCrumbs += getUpgradeCost(itemDef, i);
         }
-
         const totalValue = baseValue + Math.floor(investedCrumbs * 0.5);
 
         setCrumbs(prev => prev + totalValue);
-
         const newInventory = inventory.filter((_, i) => i !== index);
         setInventory(newInventory);
         inventoryRef.current = newInventory;
         recalculateCPS(items, newInventory);
     };
 
-    // 🔥 ARREGLO 4: Mejora usando el coste real (con descuento)
     const upgradeItem = (index) => {
         const newInventory = [...inventory];
         const slot = newInventory[index];
-        const itemDef = GAME_ITEMS[slot.id]; // Necesitamos datos del item
+        const itemDef = GAME_ITEMS[slot.id]; 
         
         if (slot.level >= 3) return;
-
-        // Usamos el helper
         const cost = getUpgradeCost(itemDef, slot.level);
 
         if (crumbs >= cost) {
@@ -320,27 +335,58 @@ export function useClickerGame() {
             inventoryRef.current = newInventory;
             recalculateCPS(items, newInventory);
         } else {
-            alert(`Necesitas ${cost} Migajas para mejorar este item.`);
+            alert(`Necesitas ${cost} Migajas.`);
         }
+    };
+
+    // EVENTOS (Iguales que antes, pero copiados para que esté completo)
+    const scheduleNextEvent = () => {
+        const minTime = 120000; const maxTime = 360000;
+        const randomTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
+        setTimeout(() => spawnEventCookie(), randomTime);
+    };
+    const spawnEventCookie = () => {
+        const x = Math.random() * 80 + 10; const y = Math.random() * 80 + 10; 
+        setActiveEvent({ x, y, id: Date.now() });
+        if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
+        eventTimeoutRef.current = setTimeout(() => { setActiveEvent(null); scheduleNextEvent(); }, 15000); 
+    };
+    const triggerEventEffect = () => {
+        setActiveEvent(null);
+        if (eventTimeoutRef.current) clearTimeout(eventTimeoutRef.current);
+
+        const roll = Math.random();
+        if (roll < 0.10) {
+            const loss = Math.floor(cookiesRef.current * 0.10);
+            cookiesRef.current = Math.max(0, cookiesRef.current - loss);
+            setCookies(cookiesRef.current);
+            setEventMessage(`🤢 PODRIDA: -${loss.toLocaleString()} Cookies (-10%)`);
+            if (buffTimeoutRef.current) clearTimeout(buffTimeoutRef.current);
+            setTimeout(() => setEventMessage(null), 3000);
+        } else if (roll < 0.40) {
+            setBonusMultiplier(7); setEventMessage("¡FRENESÍ DE PRODUCCIÓN! (x7 CPS)");
+            if (buffTimeoutRef.current) clearTimeout(buffTimeoutRef.current);
+            buffTimeoutRef.current = setTimeout(() => { setBonusMultiplier(1); setEventMessage(null); }, 30000); 
+        } else if (roll < 0.50) {
+            setClickFrenzy(777); setEventMessage("¡FRENESÍ DE CLICK! (x777 Power)");
+            if (buffTimeoutRef.current) clearTimeout(buffTimeoutRef.current);
+            buffTimeoutRef.current = setTimeout(() => { setClickFrenzy(1); setEventMessage(null); }, 10000); 
+        } else {
+            const gain = Math.max(1000, Math.floor(cookiesRef.current * 0.10)); 
+            cookiesRef.current += gain; setCookies(cookiesRef.current);
+            setEventMessage(`¡SUERTE! +${Math.floor(gain).toLocaleString()} Cookies`);
+            setTimeout(() => setEventMessage(null), 3000);
+        }
+        scheduleNextEvent(); 
     };
 
     const resetGame = async () => {
         if(confirm("¿Reiniciar TODO? Se perderán skins y migajas.")) {
-            setCookies(0);
-            setCrumbs(0);
-            cookiesRef.current = 0;
+            setCookies(0); setCrumbs(0); cookiesRef.current = 0;
             const resetBuildings = INITIAL_BUILDINGS.map(b => ({...b, count: 0}));
-            setItems(resetBuildings);
-            setCps(0);
-            
+            setItems(resetBuildings); setCps(0);
             await fetch('/api/clicker/save', {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    cookies: 0, 
-                    crumbs: 0,
-                    items: [],
-                    inventory: [] 
-                })
+                method: 'POST', body: JSON.stringify({ cookies: 0, crumbs: 0, items: [], inventory: [] })
             });
             window.location.reload();
         }
@@ -349,8 +395,9 @@ export function useClickerGame() {
     return {
         cookies, crumbs, cps, items, inventory, loaded, isSaving, saveMessage,
         handleClick, buyItem, resetGame, spinGacha, 
-        gachaCost, // ✅ Ahora sí existe y se puede exportar
-        scrapItem, upgradeItem,
+        gachaCost, 
+        scrapItem, upgradeItem, 
+        toggleEquip, // 🔥 EXPORTAMOS LA NUEVA FUNCIÓN
         activeEvent, triggerEventEffect, bonusMultiplier, eventMessage, clickFrenzy
     };
 }

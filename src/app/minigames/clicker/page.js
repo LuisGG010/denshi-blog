@@ -2,15 +2,14 @@
 import Link from 'next/link';
 import { useState } from 'react'; 
 import { useClickerGame } from '@/hooks/useClickerGame';
-import { GAME_ITEMS, UPGRADE_COSTS, SCRAP_VALUES } from '@/lib/clicker-items'; 
+import { GAME_ITEMS, UPGRADE_COSTS, SCRAP_VALUES, ITEM_TYPES } from '@/lib/clicker-items'; 
 
 export default function CookieClickerGame() {
   const { 
     cookies, crumbs, cps, items, inventory, loaded, isSaving, saveMessage, 
     handleClick, buyItem, resetGame, 
     spinGacha, gachaCost,
-    scrapItem, upgradeItem,
-    // Datos de eventos
+    scrapItem, upgradeItem, toggleEquip, // 🔥 NUEVO: Importamos toggleEquip
     activeEvent, triggerEventEffect, bonusMultiplier, eventMessage, clickFrenzy
   } = useClickerGame();
 
@@ -19,28 +18,32 @@ export default function CookieClickerGame() {
   const [selectedItemIndex, setSelectedItemIndex] = useState(null); 
   const [clickSplashes, setClickSplashes] = useState([]);
 
-  // Calcular Fuerza Visual del Click
+  // Calcular Fuerza Visual del Click (¡AHORA SOLO CUENTA EQUIPADOS!)
   const getClickStrength = () => {
       let strength = 1;
       const cursorItem = items.find(i => i.id === 1);
       if (cursorItem) strength += cursorItem.count * 1;
 
-      // Sinergia de Guantelete
-      const cursorItemRef = items.find(i => i.id === 1);
-      if (cursorItemRef) {
-          let perCursor = 1;
-          const gauntlets = inventory.filter(i => i.id === 'tool_cursor_gauntlet');
-          gauntlets.forEach(gauntlet => {
-              const mults = [1.2, 1.5, 2.0, 3.0];
-              perCursor *= mults[gauntlet.level] || 1.2;
-          });
-          if (gauntlets.length > 0) {
-             strength -= cursorItem.count * 1; 
+      // Sinergia de Guantelete (Solo si están equipados)
+      if (cursorItem) {
+          const equippedGauntlets = inventory.filter(i => i.id === 'tool_cursor_gauntlet' && i.equipped);
+          
+          if (equippedGauntlets.length > 0) {
+             strength -= cursorItem.count * 1; // Quitamos el base
+             
+             let perCursor = 1;
+             equippedGauntlets.forEach(gauntlet => {
+                 const mults = [1.2, 1.5, 2.0, 3.0];
+                 perCursor *= mults[gauntlet.level] || 1.2;
+             });
              strength += cursorItem.count * perCursor; 
           }
       }
 
       inventory.forEach(slot => {
+          // 🔥 Si no está equipado, lo ignoramos visualmente también
+          if (!slot.equipped) return;
+
           const item = GAME_ITEMS[slot.id];
           if (item && item.clickMultiplier) {
               const LEVEL_MULTS = [1, 1.5, 2.5, 5.0];
@@ -70,9 +73,7 @@ export default function CookieClickerGame() {
   };
 
   const handleVisualClick = (e) => {
-    // Evitar scroll o zoom en doble tap rápido en móbiles
     e.preventDefault(); 
-    
     handleClick();
     const btn = document.getElementById('big-cookie');
     if(btn) {
@@ -82,11 +83,9 @@ export default function CookieClickerGame() {
     const id = Date.now() + Math.random();
     const value = getClickStrength();
     
-    // Soporte para Touch Event (si e.clientX no existe)
     const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : window.innerWidth / 2);
     const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : window.innerHeight / 2);
 
-    // Randomizar un poco la posición
     const x = clientX + (Math.random() * 40 - 20); 
     const y = clientY + (Math.random() * 40 - 20);
     setClickSplashes(prev => [...prev, { id, x, y, value }]);
@@ -95,20 +94,21 @@ export default function CookieClickerGame() {
   const removeSplash = (id) => setClickSplashes(prev => prev.filter(s => s.id !== id));
   const renderStars = (level) => "⭐".repeat(level) + "☆".repeat(3 - level);
 
+  // Contadores de Equipamiento
+  const equippedTools = inventory.filter(i => i.equipped && GAME_ITEMS[i.id]?.type !== ITEM_TYPES.SKIN).length;
+  const equippedSkins = inventory.filter(i => i.equipped && GAME_ITEMS[i.id]?.type === ITEM_TYPES.SKIN).length;
+
   if (!loaded) return <div className="min-h-screen bg-black text-green-500 flex items-center justify-center font-mono">Cargando Imperio...</div>;
 
   return (
-    // 🔥 CAMBIO 1: Quitamos 'touch-none' global para permitir scroll en la lista de edificios
     <div className='min-h-screen bg-black/90 font-sans text-white selection:bg-yellow-500/30 overflow-x-hidden'>
       
       <style jsx global>{`
         @keyframes float-up { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-100px) scale(1.5); } }
         .animate-float { animation: float-up 0.8s forwards ease-out; pointer-events: none; }
-        
         @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 215, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); } }
         .animate-pulse-gold { animation: pulse-gold 2s infinite; }
         @keyframes spawn-pop { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        
         @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
         .animate-shake { animation: shake 0.5s infinite; }
         .bg-rays { background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.1) 0deg 20deg, transparent 20deg 40deg); animation: spin-slow 10s linear infinite; }
@@ -118,7 +118,6 @@ export default function CookieClickerGame() {
       {/* Galleta Dorada */}
       {activeEvent && (
           <button
-            // 🔥 'touch-none' aquí para evitar scroll al intentar atraparla
             className="fixed z-50 text-6xl cursor-pointer hover:scale-110 active:scale-95 transition-transform animate-pulse-gold touch-none"
             style={{ top: `${activeEvent.y}%`, left: `${activeEvent.x}%`, animation: 'spawn-pop 0.5s ease-out, pulse-gold 2s infinite' }}
             onClick={(e) => { e.stopPropagation(); triggerEventEffect(); }}
@@ -130,7 +129,12 @@ export default function CookieClickerGame() {
 
       {/* Mensaje Evento */}
       {eventMessage && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-gradient-to-r from-yellow-600 to-yellow-400 text-black font-black px-8 py-3 rounded-full text-xl shadow-[0_0_20px_rgba(255,215,0,0.6)] animate-in slide-in-from-top-10 fade-in duration-300 whitespace-nowrap">
+          <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[100] font-black px-8 py-3 rounded-full text-xl shadow-2xl animate-in slide-in-from-top-10 fade-in duration-300 whitespace-nowrap
+            ${eventMessage.includes('PODRIDA') 
+                ? 'bg-red-600 text-white shadow-red-500/50' 
+                : 'bg-gradient-to-r from-yellow-600 to-yellow-400 text-black shadow-yellow-500/50'
+            }
+          `}>
               {eventMessage}
           </div>
       )}
@@ -161,7 +165,10 @@ export default function CookieClickerGame() {
                     <div className="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-white/10" style={{ color: lastPrize.rarity.color }}>{lastPrize.rarity.name}</div>
                 </div>
                 <p className="text-gray-400 mt-6 text-sm max-w-xs mx-auto border-t border-gray-800 pt-4">{lastPrize.description}</p>
-                <button onClick={() => setLastPrize(null)} className="mt-8 w-full py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform">¡GENIAL!</button>
+                <div className="mt-6 text-xs text-gray-500 bg-gray-800 p-2 rounded">
+                    ⚠️ Ve al inventario y dale a "EQUIPAR" para usarlo.
+                </div>
+                <button onClick={() => setLastPrize(null)} className="mt-4 w-full py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform">¡GENIAL!</button>
             </div>
         </div>
       )}
@@ -214,8 +221,11 @@ export default function CookieClickerGame() {
                               </div>
                           )}
 
-                          <p className="text-yellow-500 text-xs tracking-[0.2em] mb-4">{renderStars(slot.level)}</p>
-                          
+                          <div className={`mb-4 px-3 py-1 rounded font-bold text-xs uppercase tracking-wide
+                             ${slot.equipped ? 'bg-green-900/40 text-green-400 border border-green-500/50' : 'bg-gray-800 text-gray-500 border border-gray-700'}`}>
+                              {slot.equipped ? '✅ EQUIPADO' : '💤 EN MOCHILA'}
+                          </div>
+
                           <div className="bg-black/40 rounded-lg p-3 w-full mb-6 border border-white/5">
                               <div className="flex justify-between items-center text-sm mb-2">
                                   <span className="text-gray-400">Actual:</span>
@@ -232,34 +242,44 @@ export default function CookieClickerGame() {
                               )}
                           </div>
 
-                          <div className="flex gap-3 w-full">
+                          {/* 🔥 BOTÓN DE EQUIPAR + ACCIONES */}
+                          <div className="flex flex-col gap-2 w-full">
                               <button 
-                                  onClick={() => !isMax && upgradeItem(selectedItemIndex)}
-                                  disabled={!canUpgrade && !isMax}
-                                  className={`flex-1 py-3 rounded-xl border font-bold flex flex-col items-center justify-center transition-all relative overflow-hidden group
-                                      ${isMax ? 'bg-green-900/20 border-green-500/50 text-green-500 cursor-default' : 
-                                          canUpgrade ? 'bg-blue-600 border-blue-400 hover:bg-blue-500 active:scale-95' : 'bg-gray-800 border-gray-700 opacity-50 cursor-not-allowed'}
-                                  `}
+                                  onClick={() => { toggleEquip(selectedItemIndex); setSelectedItemIndex(null); }}
+                                  className={`w-full py-3 rounded-xl font-black uppercase tracking-widest transition-all
+                                    ${slot.equipped 
+                                        ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-500' 
+                                        : 'bg-green-600 hover:bg-green-500 text-white border-b-4 border-green-800 active:border-b-0 active:translate-y-1'
+                                    }`}
                               >
-                                  {isMax ? (
-                                      <span>MAX</span>
-                                  ) : (
-                                      <>
-                                          <span className="text-xs uppercase font-black z-10">MEJORAR</span>
-                                          <div className="flex items-center gap-1 text-sm z-10">
-                                              <span>🛠️</span>
+                                  {slot.equipped ? 'DESEQUIPAR' : 'EQUIPAR'}
+                              </button>
+
+                              <div className="flex gap-2 w-full mt-2">
+                                  <button 
+                                      onClick={() => !isMax && upgradeItem(selectedItemIndex)}
+                                      disabled={!canUpgrade && !isMax}
+                                      className={`flex-1 py-2 rounded-xl border font-bold flex flex-col items-center justify-center transition-all relative overflow-hidden group
+                                          ${isMax ? 'bg-green-900/20 border-green-500/50 text-green-500 cursor-default' : 
+                                              canUpgrade ? 'bg-blue-600 border-blue-400 hover:bg-blue-500 active:scale-95' : 'bg-gray-800 border-gray-700 opacity-50 cursor-not-allowed'}
+                                      `}
+                                  >
+                                      {isMax ? (
+                                          <span>MAX</span>
+                                      ) : (
+                                          <div className="flex items-center gap-1 text-xs">
+                                              <span>🛠️ MEJORAR</span>
                                               <span className={crumbs >= nextCost ? "text-white" : "text-red-300"}>{nextCost}</span>
                                           </div>
-                                      </>
-                                  )}
-                              </button>
-                              <button 
-                                  onClick={() => { if(confirm(`¿Destruir por ${scrapValue} migajas?`)) { scrapItem(selectedItemIndex); setSelectedItemIndex(null); } }}
-                                  className="px-4 bg-red-900/20 border border-red-500/30 hover:bg-red-900/50 active:scale-95 text-red-400 rounded-xl font-bold flex flex-col items-center justify-center transition-all min-w-[80px]"
-                              >
-                                  <span className="text-xs uppercase font-bold mb-1">Reciclar</span>
-                                  <span className="text-sm flex items-center gap-1 text-white">+{scrapValue} 🛠️</span>
-                              </button>
+                                      )}
+                                  </button>
+                                  <button 
+                                      onClick={() => { if(confirm(`¿Destruir por ${scrapValue} migajas?`)) { scrapItem(selectedItemIndex); setSelectedItemIndex(null); } }}
+                                      className="px-4 bg-red-900/20 border border-red-500/30 hover:bg-red-900/50 active:scale-95 text-red-400 rounded-xl font-bold flex items-center justify-center transition-all"
+                                  >
+                                      <span className="text-xs">🗑️ +{scrapValue}</span>
+                                  </button>
+                              </div>
                           </div>
                       </div>
                   </div>
@@ -288,8 +308,16 @@ export default function CookieClickerGame() {
                  {Math.floor(cookies).toLocaleString()}
              </div>
              <div className="text-xs text-gray-400 uppercase font-bold mb-1">Cookies</div>
-             <div className={`text-xs md:text-sm text-gray-500 font-mono bg-gray-900/50 px-2 py-0.5 rounded inline-block transition-colors ${bonusMultiplier > 1 ? 'text-yellow-400 border border-yellow-500 animate-pulse' : ''}`}>
-                 {(cps * bonusMultiplier).toFixed(1)} CPS {bonusMultiplier > 1 && `(x${bonusMultiplier}🔥)`}
+             <div className={`text-xs md:text-sm font-mono px-2 py-0.5 rounded inline-block transition-colors 
+                ${bonusMultiplier > 1 ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-500 animate-pulse' : ''}
+                ${bonusMultiplier < 1 ? 'bg-red-900/30 text-red-500 border border-red-500 animate-pulse' : ''}
+                ${bonusMultiplier === 1 ? 'bg-gray-900/50 text-gray-500' : ''}
+             `}>
+                 {/* 🔥 CAMBIO AQUÍ: Usamos toLocaleString para las comas */}
+                 {(cps * bonusMultiplier).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} CPS 
+                 
+                 {bonusMultiplier > 1 && ` (x${bonusMultiplier}🔥)`}
+                 {bonusMultiplier < 1 && ` (↘ 10% 📉)`}
              </div>
          </div>
       </div>
@@ -299,7 +327,6 @@ export default function CookieClickerGame() {
             <div className="relative group mt-4 md:mt-0">
                 <button 
                     id="big-cookie"
-                    // 🔥 Eventos de touch específicos para móvil + touch-none para evitar zoom
                     onTouchStart={handleVisualClick} 
                     onClick={handleVisualClick}
                     className={`text-[100px] md:text-[150px] leading-none transition-transform active:scale-95 cursor-pointer filter drop-shadow-2xl select-none touch-none ${clickFrenzy > 1 ? 'animate-bounce' : ''}`}
@@ -325,33 +352,31 @@ export default function CookieClickerGame() {
                 >
                     {isSpinning ? '...' : cookies >= gachaCost ? '¡Tirar Ruleta!' : 'Insuficiente'}
                 </button>
-                <p className="text-xs text-gray-500 mt-3">Precio = 5 Min. Prod. (Máx 1,000M)</p>
+                <p className="text-xs text-gray-500 mt-3">Precio = 5 Min. Prod. (Máx 1000M)</p>
             </div>
 
             {inventory.length > 0 && (
                 <div className="w-full max-w-md animate-in slide-in-from-bottom-5 duration-500">
                     <div className="flex justify-between items-end mb-2">
                         <h3 className="text-gray-400 text-xs md:text-sm uppercase font-bold">Inventario</h3>
-                        <span className={`text-[10px] md:text-xs font-mono ${inventory.length >= 30 ? 'text-red-500 font-bold' : 'text-gray-500'}`}>
-                            {inventory.length}/30 Slots
-                        </span>
+                        {/* 🔥 CONTADORES DE EQUIPAMIENTO */}
+                        <div className="flex gap-2 text-[10px] md:text-xs font-mono">
+                            <span className={equippedTools >= 5 ? 'text-red-500' : 'text-blue-400'}>
+                                🔧 {equippedTools}/5
+                            </span>
+                            <span className={equippedSkins >= 5 ? 'text-red-500' : 'text-pink-400'}>
+                                🎨 {equippedSkins}/5
+                            </span>
+                        </div>
                     </div>
                     
-                    {/* 🔥 CAMBIO 2: Grid responsive: 4 columnas en móvil, 5 en tablet/PC */}
                     <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                         {inventory.map((slot, idx) => {
                             const itemData = GAME_ITEMS[slot.id];
                             if(!itemData) return null;
 
                             const isSkin = itemData.type === 'skin';
-
-                            const LEVEL_MULTS = [1, 1.5, 2.5, 5.0];
-                            const currentMult = LEVEL_MULTS[slot.level] || 1;
-                            
-                            let buffText = "";
-                            if (itemData.multiplier) buffText = `+${Math.round((itemData.multiplier - 1) * currentMult * 100)}% Global`;
-                            else if (itemData.buff) buffText = `+${Math.round((itemData.buff - 1) * currentMult * 100)}% ${getTargetName(itemData.targetId)}`;
-                            else if (itemData.clickMultiplier) buffText = `x${(1 + ((itemData.clickMultiplier - 1) * currentMult)).toFixed(1)} Click`;
+                            const isEquipped = slot.equipped;
 
                             return (
                                 <button 
@@ -359,13 +384,21 @@ export default function CookieClickerGame() {
                                   onClick={() => setSelectedItemIndex(idx)}
                                   className={`aspect-square bg-gray-800 rounded-lg flex items-center justify-center text-xl md:text-2xl relative group transition-all cursor-pointer z-0 hover:z-10
                                     hover:scale-105 active:scale-95
-                                    ${isSkin 
-                                      ? 'border-2 border-dashed border-pink-500/40 hover:border-pink-400' 
-                                      : 'border border-white/5 hover:border-white/50 hover:bg-gray-700'
+                                    ${isEquipped 
+                                        ? 'border-2 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' // ✅ ESTILO EQUIPADO
+                                        : isSkin 
+                                            ? 'border-2 border-dashed border-pink-500/40 hover:border-pink-400' 
+                                            : 'border border-white/5 hover:border-white/50 hover:bg-gray-700'
                                     }
                                   `}
                                 >
                                     <span className="relative z-10">{itemData.icon}</span>
+                                    
+                                    {/* Indicador de Equipado (E) */}
+                                    {isEquipped && (
+                                        <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full shadow-lg z-20"></div>
+                                    )}
+
                                     <div className="absolute inset-0 rounded-lg opacity-20 group-hover:opacity-40 transition-opacity" style={{ backgroundColor: itemData.rarity.color }}></div>
                                     
                                     {slot.level > 0 && (
@@ -374,14 +407,14 @@ export default function CookieClickerGame() {
                                         </div>
                                     )}
 
-                                    {/* 🔥 CAMBIO 3: Ocultar Tooltip en móvil (molesta al tocar) */}
+                                    {/* Tooltip (Oculto en móvil) */}
                                     <div className="hidden md:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 border border-gray-600 p-2 rounded-lg shadow-xl z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
                                         <div className="text-[10px] font-bold mb-0.5" style={{ color: itemData.rarity.color }}>{itemData.name}</div>
                                         <div className="text-[9px] text-gray-300 leading-tight mb-1 opacity-80">"{itemData.description}"</div>
-                                        {buffText && (
-                                            <div className="text-[9px] font-mono font-bold text-green-400 bg-green-900/30 px-1 rounded inline-block">
-                                                {buffText}
-                                            </div>
+                                        {isEquipped ? (
+                                            <div className="text-[9px] font-bold text-green-400 mt-1">✅ EQUIPADO</div>
+                                        ) : (
+                                            <div className="text-[9px] font-bold text-gray-500 mt-1">💤 EN MOCHILA</div>
                                         )}
                                         <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-600"></div>
                                     </div>
@@ -403,7 +436,6 @@ export default function CookieClickerGame() {
              <h2 className="text-lg md:text-xl font-bold text-gray-300">Edificios</h2>
              <button onClick={resetGame} className="text-xs text-red-900 hover:text-red-500 px-2 py-1">Reset</button>
           </div>
-          {/* 🔥 CAMBIO 4: Permitir scroll en móvil (altura automática o scroll interno) */}
           <div className="space-y-3 h-auto max-h-[500px] md:h-[600px] overflow-y-auto pr-1 custom-scrollbar">
               {items.map(item => {
                   const currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
