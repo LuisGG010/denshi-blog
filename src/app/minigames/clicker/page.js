@@ -325,7 +325,7 @@ export default function CookieClickerGame() {
                 >
                     {isSpinning ? '...' : cookies >= gachaCost ? '¡Tirar Ruleta!' : 'Insuficiente'}
                 </button>
-                <p className="text-xs text-gray-500 mt-3">Precio = 5 Min. Prod. (Máx 100M)</p>
+                <p className="text-xs text-gray-500 mt-3">Precio = 5 Min. Prod. (Máx 1,000M)</p>
             </div>
 
             {inventory.length > 0 && (

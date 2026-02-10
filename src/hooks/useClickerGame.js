@@ -93,7 +93,7 @@ export function useClickerGame() {
 
     // SISTEMA DE EVENTOS (Simplificado para el ejemplo)
     const scheduleNextEvent = () => {
-        const minTime = 60000; const maxTime = 180000;
+        const minTime = 120000; const maxTime = 360000;
         const randomTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
         setTimeout(() => spawnEventCookie(), randomTime);
     };
@@ -116,7 +116,7 @@ export function useClickerGame() {
             if (buffTimeoutRef.current) clearTimeout(buffTimeoutRef.current);
             buffTimeoutRef.current = setTimeout(() => { setClickFrenzy(1); setEventMessage(null); }, 10000); 
         } else {
-            const gain = Math.max(1000, (cps * 60 * 15)); 
+            const gain = Math.max(1000, (cps * 15)); 
             cookiesRef.current += gain; setCookies(cookiesRef.current);
             setEventMessage(`¡SUERTE! +${Math.floor(gain).toLocaleString()} Cookies`);
             setTimeout(() => setEventMessage(null), 3000);
