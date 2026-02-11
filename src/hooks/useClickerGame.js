@@ -167,28 +167,33 @@ export function useClickerGame() {
     };
 
     // 4. GAME LOOP
+    // 4. GAME LOOP (CORREGIDO)
     const animate = () => {
-    const now = Date.now();
-    
-    if (lastTimeRef.current !== null) {
-        const deltaSeconds = (now - lastTimeRef.current) / 1000;
-        
-        if (deltaSeconds > 0 && cps > 0) {
-            const effectiveCPS = cps * bonusMultiplier;
-            // Actualizamos la REF (Matemática pura, super rápido)
-            cookiesRef.current += effectiveCPS * deltaSeconds;
-            
-            // 🔥 OPTIMIZACIÓN: Solo actualizamos React (UI) 10 veces por segundo, no 60
-            // Esto reduce el uso de CPU un 80%
-            if (now - lastUiUpdateRef.current > 30) { // 100ms = 10fps para la UI
-                setCookies(cookiesRef.current);
-                lastUiUpdateRef.current = now;
+        const now = Date.now();
+
+        if (lastTimeRef.current !== null) {
+            // Calculamos cuánto tiempo pasó desde el último frame (ej: 0.016 segundos)
+            const deltaSeconds = (now - lastTimeRef.current) / 1000;
+
+            if (deltaSeconds > 0 && cps > 0) {
+                const effectiveCPS = cps * bonusMultiplier;
+                
+                // Suma matemática correcta
+                cookiesRef.current += effectiveCPS * deltaSeconds;
+
+                // Actualización Visual (Throttle)
+                // Esto solo limita cuándo "ves" el cambio, no el cálculo real
+                if (now - lastUiUpdateRef.current > 30) { // 100ms = 10 updates/seg
+                    setCookies(cookiesRef.current);
+                    lastUiUpdateRef.current = now;
+                }
             }
-          }
-        } else {
-            lastTimeRef.current = now;
         }
-        
+
+        // 🔥 CRÍTICO: Actualizamos el reloj SIEMPRE.
+        // Si no hacemos esto, deltaSeconds crece infinitamente.
+        lastTimeRef.current = now;
+
         requestRef.current = requestAnimationFrame(animate);
     };
 
