@@ -3,13 +3,15 @@ import Link from 'next/link';
 import { useState } from 'react'; 
 import { useClickerGame } from '@/hooks/useClickerGame';
 import { GAME_ITEMS, UPGRADE_COSTS, SCRAP_VALUES, ITEM_TYPES } from '@/lib/clicker-items'; 
+// 👇 Asegúrate de que este archivo exista con el código que te di antes
+import { BuildingRow, InventorySlot } from '@/components/clicker/GameParts';
 
 export default function CookieClickerGame() {
   const { 
     cookies, crumbs, cps, items, inventory, loaded, isSaving, saveMessage, 
     handleClick, buyItem, resetGame, 
     spinGacha, gachaCost,
-    scrapItem, upgradeItem, toggleEquip, // 🔥 NUEVO: Importamos toggleEquip
+    scrapItem, upgradeItem, toggleEquip,
     activeEvent, triggerEventEffect, bonusMultiplier, eventMessage, clickFrenzy
   } = useClickerGame();
 
@@ -92,7 +94,6 @@ export default function CookieClickerGame() {
   };
 
   const removeSplash = (id) => setClickSplashes(prev => prev.filter(s => s.id !== id));
-  const renderStars = (level) => "⭐".repeat(level) + "☆".repeat(3 - level);
 
   // Contadores de Equipamiento
   const equippedTools = inventory.filter(i => i.equipped && GAME_ITEMS[i.id]?.type !== ITEM_TYPES.SKIN).length;
@@ -139,12 +140,20 @@ export default function CookieClickerGame() {
           </div>
       )}
 
+      {/* Click Splashes (Textos flotantes) */}
       {clickSplashes.map(splash => (
-          <div key={splash.id} className="fixed z-[9999] text-2xl font-black text-white animate-float select-none pointer-events-none" style={{ left: splash.x, top: splash.y, textShadow: '0px 2px 0px #000' }}>
-              +{Math.floor(splash.value).toLocaleString()}
-          </div>
+        <div 
+          key={splash.id} 
+          // 🔥 IMPORTANTE: Esto elimina el elemento del DOM cuando termina la animación
+          onAnimationEnd={() => removeSplash(splash.id)}
+          className="fixed z-[9999] text-2xl font-black text-white animate-float select-none pointer-events-none" 
+          style={{ left: splash.x, top: splash.y, textShadow: '0px 2px 0px #000' }}
+        >
+          +{Math.floor(splash.value).toLocaleString()}
+        </div>
       ))}
 
+      {/* Modal Ruleta Girando */}
       {isSpinning && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 left-0 md:left-64">
             <h2 className="text-3xl font-bold text-purple-400 mb-8 animate-pulse tracking-widest text-center px-4">ABRIENDO...</h2>
@@ -153,6 +162,7 @@ export default function CookieClickerGame() {
         </div>
       )}
 
+      {/* Modal Premio Gacha */}
       {lastPrize && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in zoom-in-50 duration-300 px-4 left-0 md:left-64">
             <div className="absolute inset-0 bg-rays opacity-30 pointer-events-none"></div>
@@ -173,6 +183,7 @@ export default function CookieClickerGame() {
         </div>
       )}
 
+      {/* Modal Detalle/Upgrade Item */}
       {selectedItemIndex !== null && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-200 px-4 left-0 md:left-64">
               {(() => {
@@ -313,7 +324,6 @@ export default function CookieClickerGame() {
                 ${bonusMultiplier < 1 ? 'bg-red-900/30 text-red-500 border border-red-500 animate-pulse' : ''}
                 ${bonusMultiplier === 1 ? 'bg-gray-900/50 text-gray-500' : ''}
              `}>
-                 {/* 🔥 CAMBIO AQUÍ: Usamos toLocaleString para las comas */}
                  {(cps * bonusMultiplier).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} CPS 
                  
                  {bonusMultiplier > 1 && ` (x${bonusMultiplier}🔥)`}
@@ -323,6 +333,8 @@ export default function CookieClickerGame() {
       </div>
 
       <div className="min-h-screen pt-28 pb-10 px-4 md:px-10 flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
+        
+        {/* COLUMNA IZQUIERDA: GALLETA Y GACHA E INVENTARIO */}
         <div className="flex-1 flex flex-col items-center gap-6 md:gap-8">
             <div className="relative group mt-4 md:mt-0">
                 <button 
@@ -355,6 +367,7 @@ export default function CookieClickerGame() {
                 <p className="text-xs text-gray-500 mt-3">Precio = 5 Min. Prod. (Máx 1000M)</p>
             </div>
 
+            {/* SECCIÓN INVENTARIO */}
             {inventory.length > 0 && (
                 <div className="w-full max-w-md animate-in slide-in-from-bottom-5 duration-500">
                     <div className="flex justify-between items-end mb-2">
@@ -371,97 +384,41 @@ export default function CookieClickerGame() {
                     </div>
                     
                     <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                        {inventory.map((slot, idx) => {
-                            const itemData = GAME_ITEMS[slot.id];
-                            if(!itemData) return null;
-
-                            const isSkin = itemData.type === 'skin';
-                            const isEquipped = slot.equipped;
-
-                            return (
-                                <button 
-                                  key={idx} 
-                                  onClick={() => setSelectedItemIndex(idx)}
-                                  className={`aspect-square bg-gray-800 rounded-lg flex items-center justify-center text-xl md:text-2xl relative group transition-all cursor-pointer z-0 hover:z-10
-                                    hover:scale-105 active:scale-95
-                                    ${isEquipped 
-                                        ? 'border-2 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' // ✅ ESTILO EQUIPADO
-                                        : isSkin 
-                                            ? 'border-2 border-dashed border-pink-500/40 hover:border-pink-400' 
-                                            : 'border border-white/5 hover:border-white/50 hover:bg-gray-700'
-                                    }
-                                  `}
-                                >
-                                    <span className="relative z-10">{itemData.icon}</span>
-                                    
-                                    {/* Indicador de Equipado (E) */}
-                                    {isEquipped && (
-                                        <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full shadow-lg z-20"></div>
-                                    )}
-
-                                    <div className="absolute inset-0 rounded-lg opacity-20 group-hover:opacity-40 transition-opacity" style={{ backgroundColor: itemData.rarity.color }}></div>
-                                    
-                                    {slot.level > 0 && (
-                                        <div className="absolute bottom-0 right-0 bg-black/80 text-[8px] md:text-[10px] font-bold px-1 text-yellow-400 border-tl border-gray-600 rounded-tl rounded-br-lg z-20">
-                                            +{slot.level}
-                                        </div>
-                                    )}
-
-                                    {/* Tooltip (Oculto en móvil) */}
-                                    <div className="hidden md:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black/95 border border-gray-600 p-2 rounded-lg shadow-xl z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
-                                        <div className="text-[10px] font-bold mb-0.5" style={{ color: itemData.rarity.color }}>{itemData.name}</div>
-                                        <div className="text-[9px] text-gray-300 leading-tight mb-1 opacity-80">"{itemData.description}"</div>
-                                        {isEquipped ? (
-                                            <div className="text-[9px] font-bold text-green-400 mt-1">✅ EQUIPADO</div>
-                                        ) : (
-                                            <div className="text-[9px] font-bold text-gray-500 mt-1">💤 EN MOCHILA</div>
-                                        )}
-                                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-600"></div>
-                                    </div>
-                                </button>
-                            )
-                        })}
+                        {inventory.map((slot, idx) => (
+                            // 👇 USAMOS EL COMPONENTE OPTIMIZADO AQUÍ
+                            <InventorySlot 
+                                key={idx} 
+                                slot={slot} 
+                                index={idx} 
+                                onClick={setSelectedItemIndex} 
+                            />
+                        ))}
                         {Array.from({ length: Math.max(0, 30 - inventory.length) }).map((_, i) => (
-                             <div key={`empty-${i}`} className="aspect-square bg-gray-900/30 rounded-lg border border-white/5 flex items-center justify-center">
+                            <div key={`empty-${i}`} className="aspect-square bg-gray-900/30 rounded-lg border border-white/5 flex items-center justify-center">
                                 <div className="w-1 h-1 md:w-2 md:h-2 rounded-full bg-white/5"></div>
-                             </div>
+                            </div>
                         ))}
                     </div>
                 </div>
             )}
         </div>
 
+        {/* COLUMNA DERECHA: EDIFICIOS */}
         <div className="flex-1 max-w-md mx-auto lg:max-w-none w-full pb-8">
           <div className="flex justify-between items-end mb-4 border-b border-gray-800 pb-2">
              <h2 className="text-lg md:text-xl font-bold text-gray-300">Edificios</h2>
              <button onClick={resetGame} className="text-xs text-red-900 hover:text-red-500 px-2 py-1">Reset</button>
           </div>
           <div className="space-y-3 h-auto max-h-[500px] md:h-[600px] overflow-y-auto pr-1 custom-scrollbar">
-              {items.map(item => {
-                  const currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
-                  const canAfford = cookies >= currentCost;
-                  return (
-                      <button
-                          key={item.id}
-                          onClick={() => buyItem(item.id)}
-                          disabled={!canAfford}
-                          className={`w-full flex items-center justify-between p-3 md:p-4 rounded-xl border transition-all duration-200 group relative overflow-hidden active:scale-[0.98]
-                            ${canAfford ? 'bg-gray-800 border-gray-700 hover:border-yellow-500 hover:bg-gray-750' : 'bg-gray-900 border-transparent opacity-60'}`}
-                      >
-                          <div className="flex items-center gap-3 md:gap-4 relative z-10">
-                              <div className="text-2xl md:text-3xl bg-black/40 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-lg">{item.icon}</div>
-                              <div className="text-left">
-                                  <h3 className="font-bold text-white text-sm md:text-base group-hover:text-yellow-400 transition-colors">{item.name}</h3>
-                                  <p className={`text-xs md:text-sm font-mono ${canAfford ? 'text-green-400' : 'text-red-400'}`}>Cost: {currentCost.toLocaleString()}</p>
-                              </div>
-                          </div>
-                          <div className="text-right relative z-10">
-                              <span className="text-xl md:text-2xl font-bold text-gray-600 group-hover:text-white">{item.count}</span>
-                              <span className="text-[10px] md:text-xs text-gray-500 block">+{item.cps} cps</span>
-                          </div>
-                      </button>
-                  )
-              })}
+              {items.map(item => (
+                  // 👇 USAMOS EL COMPONENTE OPTIMIZADO AQUÍ
+                  <BuildingRow 
+                    key={item.id}
+                    item={item}
+                    cookies={cookies} // Pasamos cookies para que calcule si se puede comprar
+                    buyItem={buyItem}
+                  />
+              ))}
           </div>
         </div>
 

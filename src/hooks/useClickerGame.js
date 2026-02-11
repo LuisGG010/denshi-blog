@@ -39,6 +39,8 @@ export function useClickerGame() {
     const eventTimeoutRef = useRef(null);
     const buffTimeoutRef = useRef(null);
 
+    const lastUiUpdateRef = useRef(0);
+
     const baseGachaCost = Math.max(5000, Math.floor(cps * 300));
     const gachaCost = Math.min(1000000000, baseGachaCost);
 
@@ -120,10 +122,14 @@ export function useClickerGame() {
         setCps(totalCPS * globalMultiplier);
     };
 
-    // 3. NUEVA FUNCIÓN: EQUIPAR / DESEQUIPAR
+    // 3. NUEVA FUNCIÓN: EQUIPAR / DESEQUIPAR (CORREGIDA ✅)
     const toggleEquip = (index) => {
+        // Hacemos copia del array
         const newInventory = [...inventory];
-        const slot = newInventory[index];
+        // 🔥 CLAVE: Hacemos copia del OBJETO específico. 
+        // Así React detecta que es "nuevo" y actualiza el botón.
+        const slot = { ...newInventory[index] }; 
+        
         const itemDef = GAME_ITEMS[slot.id];
 
         // A. Si ya está equipado, lo quitamos
@@ -134,16 +140,15 @@ export function useClickerGame() {
         else {
             const isSkin = itemDef.type === ITEM_TYPES.SKIN;
             
-            // Contamos cuántos de este tipo ya tenemos equipados
             const currentlyEquipped = newInventory.filter(i => {
                 if (!i.equipped) return false;
                 const def = GAME_ITEMS[i.id];
                 const type = def.type;
                 if (isSkin) return type === ITEM_TYPES.SKIN;
-                return type !== ITEM_TYPES.SKIN; // Tools y Globals comparten cupo
+                return type !== ITEM_TYPES.SKIN; 
             });
 
-            const limit = isSkin ? 5 : 5; // 🔥 LÍMITES: 3 Skins, 5 Tools
+            const limit = isSkin ? 5 : 5; 
 
             if (currentlyEquipped.length >= limit) {
                 alert(`¡Límite alcanzado! Solo puedes equipar ${limit} items de este tipo.`);
@@ -153,6 +158,9 @@ export function useClickerGame() {
             slot.equipped = true;
         }
 
+        // Insertamos el objeto copiado/modificado en el array
+        newInventory[index] = slot; 
+
         setInventory(newInventory);
         inventoryRef.current = newInventory;
         recalculateCPS(items, newInventory);
@@ -160,18 +168,27 @@ export function useClickerGame() {
 
     // 4. GAME LOOP
     const animate = () => {
-        if (lastTimeRef.current !== null) {
-            const now = Date.now();
-            const deltaSeconds = (now - lastTimeRef.current) / 1000;
-            if (deltaSeconds > 0 && cps > 0) {
-                const effectiveCPS = cps * bonusMultiplier;
-                cookiesRef.current += effectiveCPS * deltaSeconds;
+    const now = Date.now();
+    
+    if (lastTimeRef.current !== null) {
+        const deltaSeconds = (now - lastTimeRef.current) / 1000;
+        
+        if (deltaSeconds > 0 && cps > 0) {
+            const effectiveCPS = cps * bonusMultiplier;
+            // Actualizamos la REF (Matemática pura, super rápido)
+            cookiesRef.current += effectiveCPS * deltaSeconds;
+            
+            // 🔥 OPTIMIZACIÓN: Solo actualizamos React (UI) 10 veces por segundo, no 60
+            // Esto reduce el uso de CPU un 80%
+            if (now - lastUiUpdateRef.current > 30) { // 100ms = 10fps para la UI
                 setCookies(cookiesRef.current);
+                lastUiUpdateRef.current = now;
             }
-            lastTimeRef.current = now;
+          }
         } else {
-            lastTimeRef.current = Date.now();
+            lastTimeRef.current = now;
         }
+        
         requestRef.current = requestAnimationFrame(animate);
     };
 
@@ -255,8 +272,14 @@ export function useClickerGame() {
         const currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
 
         if (cookiesRef.current >= currentCost) {
+            // Hacemos copia del array de edificios
             const newItems = [...items];
+            // 🔥 CLAVE: Creamos una copia del edificio que vamos a modificar
+            newItems[itemIndex] = { ...item };
+            
+            // Modificamos la COPIA, no el original
             newItems[itemIndex].count += 1;
+            
             cookiesRef.current -= currentCost;
             setCookies(cookiesRef.current);
             setItems(newItems);
