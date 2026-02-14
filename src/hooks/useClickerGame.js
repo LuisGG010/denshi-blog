@@ -283,6 +283,9 @@ export function useClickerGame() {
           setCookies(cookiesRef.current);
 
           recalculateCPS(newItems, inventory);
+          
+          //Guardar inmediatamente después de la compra
+          forceSave(newItems, inventory, crumbs);
 
           return newItems;
       });
@@ -290,37 +293,42 @@ export function useClickerGame() {
 
 
     const spinGacha = () => {
-    if (cookiesRef.current < gachaCost) return null;
+      if (cookiesRef.current < gachaCost) return null;
+      if (inventoryRef.current.length >= 30) {
+          alert("¡Inventario Lleno! Recicla items para seguir jugando.");
+          return null;
+      }
 
-    setInventory(prev => {
-        if (prev.length >= 30) {
-            alert("¡Inventario Lleno! Recicla items para seguir jugando.");
-            return prev;
-        }
+      cookiesRef.current -= gachaCost;
+      setCookies(cookiesRef.current);
 
-        cookiesRef.current -= gachaCost;
-        setCookies(cookiesRef.current);
+      const roll = Math.random();
+      let selectedRarity = 'common';
+      if (roll > 0.98) selectedRarity = 'legendary';
+      else if (roll > 0.90) selectedRarity = 'epic';
+      else if (roll > 0.70) selectedRarity = 'rare';
 
-        const roll = Math.random();
-        let selectedRarity = 'common';
-        if (roll > 0.98) selectedRarity = 'legendary';
-        else if (roll > 0.90) selectedRarity = 'epic';
-        else if (roll > 0.70) selectedRarity = 'rare';
+      const possibleItems = Object.values(GAME_ITEMS)
+          .filter(i => i.rarity.id === selectedRarity);
 
-        const possibleItems = Object.values(GAME_ITEMS).filter(i => i.rarity.id === selectedRarity);
-        if (!possibleItems.length) return prev;
+      if (!possibleItems.length) return null;
 
-        const prize = possibleItems[Math.floor(Math.random() * possibleItems.length)];
+      const prize = possibleItems[Math.floor(Math.random() * possibleItems.length)];
 
-        const newInventory = [...prev, { id: prize.id, level: 0, equipped: false }];
+      const newInventory = [...inventoryRef.current, { 
+          id: prize.id, 
+          level: 0, 
+          equipped: false 
+      }];
 
-        inventoryRef.current = newInventory;
-        recalculateCPS(items, newInventory);
+      inventoryRef.current = newInventory;
+      setInventory(newInventory);
+      recalculateCPS(items, newInventory);
 
-        return newInventory;
-      });
+      forceSave(items, newInventory, crumbs);
+
+      return prize;
     };
-
 
     const getUpgradeCost = (itemDef, level) => {
         const baseCost = UPGRADE_COSTS[level];
@@ -352,8 +360,35 @@ export function useClickerGame() {
           inventoryRef.current = newInventory;
           recalculateCPS(items, newInventory);
 
+          forceSave(items, newInventory, crumbs);
+
           return newInventory;
       });
+    };
+
+    const forceSave = async (currentItems, currentInventory, currentCrumbs) => {
+      // Si el juego no ha cargado o estamos ascendiendo, no guardamos
+      if (!loaded || isAscendingRef.current) return;
+
+      setIsSaving(true);
+      try {
+          await fetch('/api/clicker/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                  cookies: cookiesRef.current, // Ref siempre tiene el valor real
+                  crumbs: currentCrumbs,
+                  items: currentItems.map(i => ({ id: i.id, count: i.count })),
+                  inventory: currentInventory 
+              })
+          });
+          setSaveMessage('Sincronizado ✅');
+          setTimeout(() => setSaveMessage(''), 1500);
+      } catch (err) {
+          console.error("Error en guardado instantáneo:", err);
+      } finally {
+          setIsSaving(false);
+      }
     };
 
 
@@ -379,6 +414,8 @@ export function useClickerGame() {
 
           inventoryRef.current = newInventory;
           recalculateCPS(items, newInventory);
+
+          forceSave(items, newInventory, crumbs);
 
           return newInventory;
       });
