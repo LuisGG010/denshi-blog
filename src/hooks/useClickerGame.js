@@ -279,25 +279,26 @@ export function useClickerGame() {
     };
 
     const buyItem = (itemId) => {
-        const itemIndex = items.findIndex(i => i.id === itemId);
-        const item = items[itemIndex];
+    setItems(prevItems => {
+        const itemIndex = prevItems.findIndex(i => i.id === itemId);
+        const item = prevItems[itemIndex];
         const currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
 
-        if (cookiesRef.current >= currentCost) {
-            // Hacemos copia del array de edificios
-            const newItems = [...items];
-            // 🔥 CLAVE: Creamos una copia del edificio que vamos a modificar
-            newItems[itemIndex] = { ...item };
-            
-            // Modificamos la COPIA, no el original
-            newItems[itemIndex].count += 1;
-            
-            cookiesRef.current -= currentCost;
-            setCookies(cookiesRef.current);
-            setItems(newItems);
-            recalculateCPS(newItems, inventory);
-        }
-    };
+        if (cookiesRef.current < currentCost) return prevItems;
+
+        const newItems = [...prevItems];
+        newItems[itemIndex] = { ...item };
+        newItems[itemIndex].count += 1;
+
+        cookiesRef.current -= currentCost;
+        setCookies(cookiesRef.current);
+
+        recalculateCPS(newItems, inventory);
+
+        return newItems;
+    });
+};
+
 
     const spinGacha = () => {
         if (inventory.length >= 30) {
