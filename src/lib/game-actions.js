@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js'
 import { GAME_ITEMS } from '@/lib/clicker-items' // 👈 Importamos para validar buffs
 

@@ -8,20 +8,48 @@ import { usePathname } from 'next/navigation';
 // LISTA DE CANCIONES
 const PLAYLIST = [
   { 
-    title: "Castle Funk - Deltarune Ch.4", 
+    title: "Castle Funk - Toby Fox (Deltarune Ch.4)", 
     url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/castle-funk.mp3" 
   },
   { 
-    title: "My Castle Town - Deltarune Ch.2", 
+    title: "My Castle Town - Toby Fox (Deltarune Ch.2)", 
     url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/my-castle-town.mp3" 
   },
   { 
-    title: "Neon Mixtape Tour - PvZ2", 
+    title: "Neon Mixtape Tour - (PvZ2 Soundtrack)", 
     url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/neon-mixtape.mp3" 
   },
   { 
     title: "Insane - feat. Sora", 
     url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/Insane-feat-Sora.mp3" 
+  },
+  { ///////////////////////////// 
+    title: "K.K. Cruisin' - Hyper Potions (Animal Crossing Remix Cover)", 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/kk-cruisin-anc.mp3" 
+  },
+  { 
+    title: "TV WORLD - Toby Fox (Deltarune Ch.3)", 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/tv-world.mp3" 
+  },
+  { 
+    title: "Reunited - Toby Fox (Undertale Soundtrack)", 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/reunited.mp3" 
+  },
+  { 
+    title: "Graze the Roof - Laura Shigihara (PvZ Soundtrack)", 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/graze-the-roof.mp3" 
+  },
+  { 
+    title: "Rigor Mormist - Typho (PvZ Remix)", 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/rigor-mormist-remix.mp3" 
+  },
+  { 
+    title: "Resort Island : Can You Feel The Sunshine? - SEGA (Sonic R)", 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/can-you-feel-the-sunshine.mp3" 
+  },
+  { 
+    title: "Star Light Zone - Iceferno (SEGA Sonic 1 Remix)", 
+    url: "https://slnxvatqszcksjvnjach.supabase.co/storage/v1/object/public/blog-media/music/star-light-zone.mp3" 
   }
 ];
 

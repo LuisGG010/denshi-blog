@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { GAME_ITEMS, SCRAP_VALUES, UPGRADE_COSTS, LEVEL_MULTS, ITEM_TYPES } from '@/lib/clicker-items';
+import { ascendFromClicker, generateSaveCode, loadSaveCode } from '@/app/actions';
 
 // src/hooks/useClickerGame.js
 
@@ -40,6 +41,8 @@ export function useClickerGame() {
     const buffTimeoutRef = useRef(null);
 
     const lastUiUpdateRef = useRef(0);
+    // 🔥 NUEVO: Bloqueo para evitar que el auto-save sobrescriba el ascenso
+    const isAscendingRef = useRef(false);
 
     const baseGachaCost = Math.max(5000, Math.floor(cps * 300));
     const gachaCost = Math.min(1000000000, baseGachaCost);
@@ -205,9 +208,13 @@ export function useClickerGame() {
     }, [cps, loaded, bonusMultiplier]);
 
     // 5. AUTO-SAVE
+    // 2. AUTO-SAVE CORREGIDO (Modifica tu useEffect existente)
     useEffect(() => {
         if (!loaded) return;
         const saveInterval = setInterval(async () => {
+            // SI ESTAMOS ASCENDIENDO, PROHIBIDO GUARDAR
+            if (isAscendingRef.current) return; 
+
             setIsSaving(true);
             try {
                 await fetch('/api/clicker/save', {
@@ -217,7 +224,7 @@ export function useClickerGame() {
                         cookies: cookiesRef.current, 
                         crumbs: crumbs,
                         items: items.map(i => ({ id: i.id, count: i.count })),
-                        inventory: inventory // Guarda el estado 'equipped'
+                        inventory: inventory 
                     })
                 });
                 setSaveMessage('Guardado ✅');
@@ -408,6 +415,87 @@ export function useClickerGame() {
         scheduleNextEvent(); 
     };
 
+    // FUNCIÓN DE ASCENSO
+    // 3. FUNCIÓN DE ASCENSO CORREGIDA
+    const triggerAscension = async () => {
+        if (cookiesRef.current < 300000000) return;
+
+        const confirmacion = confirm(
+            "🌌 ¿ASCENSIÓN DIMENSIONAL? 🌌\n\n" +
+            "COSTO: Todo tu imperio de galletas.\n" +
+            "PREMIO: +2 Capacidad en d/place.\n" +
+            "(Máximo Nivel 5)"
+        );
+
+        if (confirmacion) {
+            // 🛑 ACTIVAMOS EL ESCUDO ANTI-AUTOSAVE
+            isAscendingRef.current = true; 
+            setIsSaving(true);
+            
+            try {
+                // Llamamos a la Server Action
+                const res = await ascendFromClicker();
+                
+                if (res.success) {
+                    alert(`✨ ¡ASCENSIÓN EXITOSA! ✨\nAhora eres Nivel ${res.newLevel}.`);
+                    // Forzamos recarga inmediata para evitar que algo se guarde en memoria
+                    window.location.href = window.location.href; 
+                } else {
+                    alert("Error: " + res.error);
+                    isAscendingRef.current = false; // Si falló, permitimos guardar de nuevo
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión.");
+                isAscendingRef.current = false;
+            } finally {
+                setIsSaving(false);
+            }
+        }
+    };
+
+    // 8. EXPORTAR DATOS
+    const handleExport = async () => {
+        const res = await generateSaveCode();
+        if (res.success) {
+            // Creamos un archivo de texto virtual y lo descargamos
+            const blob = new Blob([res.code], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `denshi-save-${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            alert("💾 Archivo de guardado descargado.\nGuárdalo bien, es tu única llave de respaldo.");
+        } else {
+            alert("Error: " + (res.error || "Error desconocido en el servidor"));
+        }
+    };
+
+    // 9. IMPORTAR DATOS
+    const handleImport = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const content = e.target.result;
+            // Limpiamos espacios en blanco por si acaso
+            const code = content.trim();
+
+            if(confirm("⚠️ ¿Sobrescribir tu partida actual con este archivo?\nSe recargará la página.")) {
+                const res = await loadSaveCode(code);
+                if (res.success) {
+                    alert("✅ Partida recuperada con éxito.");
+                    window.location.reload();
+                } else {
+                    alert("❌ Error: " + res.error);
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
+
     const resetGame = async () => {
         if(confirm("¿Reiniciar TODO? Se perderán skins y migajas.")) {
             setCookies(0); setCrumbs(0); cookiesRef.current = 0;
@@ -422,8 +510,9 @@ export function useClickerGame() {
 
     return {
         cookies, crumbs, cps, items, inventory, loaded, isSaving, saveMessage,
-        handleClick, buyItem, resetGame, spinGacha, 
-        gachaCost, 
+        handleClick, buyItem,
+        resetGame, handleExport, handleImport, triggerAscension,
+        spinGacha, gachaCost, 
         scrapItem, upgradeItem, 
         toggleEquip, // 🔥 EXPORTAMOS LA NUEVA FUNCIÓN
         activeEvent, triggerEventEffect, bonusMultiplier, eventMessage, clickFrenzy

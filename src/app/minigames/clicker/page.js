@@ -9,7 +9,8 @@ import { BuildingRow, InventorySlot } from '@/components/clicker/GameParts';
 export default function CookieClickerGame() {
   const { 
     cookies, crumbs, cps, items, inventory, loaded, isSaving, saveMessage, 
-    handleClick, buyItem, resetGame, 
+    handleClick, buyItem,
+    resetGame, triggerAscension, handleExport, handleImport,
     spinGacha, gachaCost,
     scrapItem, upgradeItem, toggleEquip,
     activeEvent, triggerEventEffect, bonusMultiplier, eventMessage, clickFrenzy
@@ -152,6 +153,8 @@ export default function CookieClickerGame() {
           +{Math.floor(splash.value).toLocaleString()}
         </div>
       ))}
+
+      
 
       {/* Modal Ruleta Girando */}
       {isSpinning && (
@@ -314,6 +317,8 @@ export default function CookieClickerGame() {
                  </div>
              </div>
          </div>
+
+         
          <div className="text-right">
              <div className="text-2xl md:text-4xl font-black text-yellow-500 leading-none">
                  {Math.floor(cookies).toLocaleString()}
@@ -339,8 +344,8 @@ export default function CookieClickerGame() {
             <div className="relative group mt-4 md:mt-0">
                 <button 
                     id="big-cookie"
-                    onTouchStart={handleVisualClick} 
-                    onClick={handleVisualClick}
+                    // 🔥 CAMBIO AQUÍ: Usamos onPointerDown y borramos onClick/onTouchStart
+                    onPointerDown={handleVisualClick} 
                     className={`text-[100px] md:text-[150px] leading-none transition-transform active:scale-95 cursor-pointer filter drop-shadow-2xl select-none touch-none ${clickFrenzy > 1 ? 'animate-bounce' : ''}`}
                     style={{ textShadow: '0 0 50px rgba(200,150,50,0.3)', WebkitTapHighlightColor: 'transparent' }}
                 >
@@ -366,6 +371,35 @@ export default function CookieClickerGame() {
                 </button>
                 <p className="text-xs text-gray-500 mt-3">Precio = 5 Min. Prod. (Máx 1000M)</p>
             </div>
+
+            {/* 🔥🔥🔥 AQUÍ VA EL NUEVO BOTÓN DE ASCENSO 🔥🔥🔥 */}
+            {/* Solo aparece si tienes +300M, creando un efecto sorpresa */}
+            {cookies >= 300000000 && (
+                <div className="w-full max-w-md animate-in zoom-in duration-1000 order-last md:order-none">
+                    <button 
+                        onClick={triggerAscension}
+                        className="group relative w-full overflow-hidden rounded-2xl p-1 transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(59,130,246,0.5)]"
+                    >
+                        {/* Fondo animado estilo nebulosa */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-900 via-indigo-600 to-blue-900 animate-bg-pan opacity-80 group-hover:opacity-100"></div>
+                        
+                        {/* Contenido del botón */}
+                        <div className="relative flex items-center justify-between bg-black/40 backdrop-blur-sm px-6 py-4 rounded-xl border border-white/10 group-hover:border-white/30">
+                            <div className="text-left">
+                                <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200 italic tracking-tighter">
+                                    ASCENSIÓN
+                                </h3>
+                                <p className="text-[10px] md:text-xs text-blue-200 font-mono mt-1">
+                                    Sacrificar todo &rarr; <span className="text-yellow-400 font-bold">+2 Píxeles (d/place)</span>
+                                </p>
+                            </div>
+                            <div className="text-4xl animate-pulse filter drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
+                                💠
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            )}
 
             {/* SECCIÓN INVENTARIO */}
             {inventory.length > 0 && (
@@ -402,6 +436,7 @@ export default function CookieClickerGame() {
                 </div>
             )}
         </div>
+        
 
         {/* COLUMNA DERECHA: EDIFICIOS */}
         <div className="flex-1 max-w-md mx-auto lg:max-w-none w-full pb-8">
@@ -420,8 +455,27 @@ export default function CookieClickerGame() {
                   />
               ))}
           </div>
-        </div>
 
+          {/* 👇 SECCIÓN DE GESTIÓN DE DATOS (NUEVO) 👇 */}
+          <div className="mt-4 border-t border-gray-800 pt-4 flex gap-2">
+              <button 
+                  onClick={handleExport}
+                  className="flex-1 bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 text-xs font-bold py-2 rounded border border-blue-800/50 transition-colors"
+              >
+                  💾 EXPORTAR CUENTA
+              </button>
+
+              <label className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs font-bold py-2 rounded border border-gray-700 cursor-pointer text-center transition-colors">
+                  📂 IMPORTAR CUENTA
+                  <input 
+                      type="file" 
+                      accept=".txt" 
+                      className="hidden" 
+                      onChange={handleImport} 
+                  />
+              </label>
+          </div>
+        </div>
       </div>
     </div>
   );

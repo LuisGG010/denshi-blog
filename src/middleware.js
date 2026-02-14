@@ -9,6 +9,22 @@ export async function middleware(request) {
     },
   })
 
+  // Buscamos si el usuario ya tiene una ID de jugador
+  let gamerId = request.cookies.get('denshi_gamer_id')?.value
+
+  // Si no tiene ID entonces le creamos uno nuevo (UUID seguro)
+  if (!gamerId) {
+    gamerId = crypto.randomUUID();
+
+    response.cookies.set('denshi_gamer_id', gamerId, {
+      httpOnly: true, //seguridad anti hack
+      secure: process.env.NODE_ENV === 'production', // Solo HTTPS en produccion
+      sameSite: 'lax', //Permite navegar normal
+      maxAge: 60*60*24*365, //Dura 1 año
+      path: '/' //Funciona en todo el sitio web
+    })
+  }
+
   // 2. Configuramos el cliente Supabase
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -28,16 +44,27 @@ export async function middleware(request) {
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options)
           })
+
+          //Esto asegura que la cookie de supabase no borre esta.
+          if (!request.cookies.get('denshi_gamer_id')) {
+            response.cookies.set('denshi_gamer_id', gamerId, {
+              httpOnly: true, 
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax', 
+              maxAge: 60*60*24*365,
+              path: '/'
+            })
+          }
         },
       },
     }
   )
 
-  // 3. 🔍 VERIFICAMOS SI HAY USUARIO REAL
+  // 3. VERIFICAMOS SI HAY USUARIO REAL
   // Usamos getUser() porque es más seguro que getSession()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 4. 🛑 LÓGICA DE BLOQUEO (EL GUARDIA)
+  // 4. LÓGICA DE BLOQUEO (EL GUARDIA)
   
   // Si la ruta empieza con '/admin' Y NO hay usuario...
   if (request.nextUrl.pathname.startsWith('/admin') && !user) {

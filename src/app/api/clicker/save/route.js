@@ -1,19 +1,20 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import crypto from 'crypto';
-import { getClickerSave, saveClickerProgress } from '@/lib/game-actions'; // 👈 Importamos
-
-// Función auxiliar para identificar al usuario por IP
-function getUserHash(req) {
-    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-    const salt = process.env.IP_SALT || 'salt-secreto-denshi';
-    return crypto.createHash('sha256').update(ip + salt).digest('hex');
-}
+import { getClickerSave, saveClickerProgress } from '@/lib/game-actions';
 
 export async function GET(request) {
   try {
-    const userHash = getUserHash(request);
-    const saveData = await getClickerSave(userHash); // Lógica delegada
-    return NextResponse.json({ saveData });
+    const cookieStore = await cookies();
+    const gamerId = cookieStore.get('denshi_gamer_id')?.value
+
+    if (!gamerId) {
+      return NextResponse.json({error: 'No gamer ID found' }, {status: 401});
+    }
+
+    //Usamos el ID de la cookie en vez del hash de IP
+    const saveData = await getClickerSave(gamerId);
+    return NextResponse.json({ saveData })
   } catch (e) {
     return NextResponse.json({ error: 'Error cargando save' }, { status: 500 });
   }
@@ -21,11 +22,21 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const userHash = getUserHash(request);
-    const body = await request.json();
+    // leer cookies
+    const cookieStore = await cookies();
+    const gamerId = cookieStore.get('denshi_gamer_id')?.value;
 
-    // La librería se encarga de validar Anti-Cheat y DB
-    await saveClickerProgress(userHash, body);
+    if (!gamerId) {
+      return NextResponse.json({error: 'No gamer ID found', status: 401 });
+    }
+
+    const body = await request.json();
+    
+
+    //guardar usando la id de la cookie
+    // logica anticheat en game-actions funciona igual, pero ahora userhash es en realidad UUID de la cookie
+    await saveClickerProgress(gamerId, body)
+
 
     return NextResponse.json({ success: true });
   } catch (e) {
