@@ -127,46 +127,35 @@ export function useClickerGame() {
 
     // 3. NUEVA FUNCIÓN: EQUIPAR / DESEQUIPAR (CORREGIDA ✅)
     const toggleEquip = (index) => {
-        // Hacemos copia del array
-        const newInventory = [...inventory];
-        // 🔥 CLAVE: Hacemos copia del OBJETO específico. 
-        // Así React detecta que es "nuevo" y actualiza el botón.
-        const slot = { ...newInventory[index] }; 
-        
+    setInventory(prev => {
+        const newInventory = [...prev];
+        const slot = { ...newInventory[index] };
         const itemDef = GAME_ITEMS[slot.id];
-
-        // A. Si ya está equipado, lo quitamos
         if (slot.equipped) {
-            slot.equipped = false;
-        } 
-        // B. Si queremos equiparlo, verificamos límites
-        else {
-            const isSkin = itemDef.type === ITEM_TYPES.SKIN;
-            
+          slot.equipped = false;
+        } else {
+          const isSkin = itemDef.type === ITEM_TYPES.SKIN;
             const currentlyEquipped = newInventory.filter(i => {
-                if (!i.equipped) return false;
+              if (!i.equipped) return false;
                 const def = GAME_ITEMS[i.id];
-                const type = def.type;
-                if (isSkin) return type === ITEM_TYPES.SKIN;
-                return type !== ITEM_TYPES.SKIN; 
-            });
+                return isSkin ? def.type === ITEM_TYPES.SKIN : def.type !== ITEM_TYPES.SKIN;
+              });
 
-            const limit = isSkin ? 5 : 5; 
+              const limit = 5;
+              if (currentlyEquipped.length >= limit) {
+                  alert(`¡Límite alcanzado! Solo puedes equipar ${limit} items de este tipo.`);
+                  return prev;
+              }
 
-            if (currentlyEquipped.length >= limit) {
-                alert(`¡Límite alcanzado! Solo puedes equipar ${limit} items de este tipo.`);
-                return; 
-            }
+              slot.equipped = true;
+          }
+          newInventory[index] = slot;
 
-            slot.equipped = true;
-        }
+          inventoryRef.current = newInventory;
+          recalculateCPS(items, newInventory);
 
-        // Insertamos el objeto copiado/modificado en el array
-        newInventory[index] = slot; 
-
-        setInventory(newInventory);
-        inventoryRef.current = newInventory;
-        recalculateCPS(items, newInventory);
+          return newInventory;
+      });
     };
 
     // 4. GAME LOOP
@@ -279,34 +268,35 @@ export function useClickerGame() {
     };
 
     const buyItem = (itemId) => {
-    setItems(prevItems => {
-        const itemIndex = prevItems.findIndex(i => i.id === itemId);
-        const item = prevItems[itemIndex];
-        const currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
+      setItems(prevItems => {
+          const itemIndex = prevItems.findIndex(i => i.id === itemId);
+          const item = prevItems[itemIndex];
+          const currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
 
-        if (cookiesRef.current < currentCost) return prevItems;
+          if (cookiesRef.current < currentCost) return prevItems;
 
-        const newItems = [...prevItems];
-        newItems[itemIndex] = { ...item };
-        newItems[itemIndex].count += 1;
+          const newItems = [...prevItems];
+          newItems[itemIndex] = { ...item };
+          newItems[itemIndex].count += 1;
 
-        cookiesRef.current -= currentCost;
-        setCookies(cookiesRef.current);
+          cookiesRef.current -= currentCost;
+          setCookies(cookiesRef.current);
 
-        recalculateCPS(newItems, inventory);
+          recalculateCPS(newItems, inventory);
 
-        return newItems;
-    });
-};
+          return newItems;
+      });
+    };
 
 
     const spinGacha = () => {
-        if (inventory.length >= 30) {
-            alert("¡Inventario Lleno! Recicla items para seguir jugando.");
-            return null;
-        }
+    if (cookiesRef.current < gachaCost) return null;
 
-        if (cookiesRef.current < gachaCost) return null;
+    setInventory(prev => {
+        if (prev.length >= 30) {
+            alert("¡Inventario Lleno! Recicla items para seguir jugando.");
+            return prev;
+        }
 
         cookiesRef.current -= gachaCost;
         setCookies(cookiesRef.current);
@@ -318,18 +308,19 @@ export function useClickerGame() {
         else if (roll > 0.70) selectedRarity = 'rare';
 
         const possibleItems = Object.values(GAME_ITEMS).filter(i => i.rarity.id === selectedRarity);
-        if (possibleItems.length === 0) return null;
+        if (!possibleItems.length) return prev;
 
         const prize = possibleItems[Math.floor(Math.random() * possibleItems.length)];
 
-        // Al ganar, item viene desequipado por defecto
-        const newInventory = [...inventory, { id: prize.id, level: 0, equipped: false }];
-        setInventory(newInventory);
+        const newInventory = [...prev, { id: prize.id, level: 0, equipped: false }];
+
         inventoryRef.current = newInventory;
         recalculateCPS(items, newInventory);
 
-        return prize;
+        return newInventory;
+      });
     };
+
 
     const getUpgradeCost = (itemDef, level) => {
         const baseCost = UPGRADE_COSTS[level];
@@ -338,42 +329,61 @@ export function useClickerGame() {
     };
 
     const scrapItem = (index) => {
-        const slot = inventory[index];
-        const itemDef = GAME_ITEMS[slot.id];
-        if(!itemDef) return;
+      setInventory(prev => {
+          const slot = prev[index];
+          if (!slot) return prev;
 
-        const baseValue = SCRAP_VALUES[itemDef.rarity.id] || 10;
-        let investedCrumbs = 0;
-        for (let i = 0; i < slot.level; i++) {
-            investedCrumbs += getUpgradeCost(itemDef, i);
-        }
-        const totalValue = baseValue + Math.floor(investedCrumbs * 0.5);
+          const itemDef = GAME_ITEMS[slot.id];
+          if (!itemDef) return prev;
 
-        setCrumbs(prev => prev + totalValue);
-        const newInventory = inventory.filter((_, i) => i !== index);
-        setInventory(newInventory);
-        inventoryRef.current = newInventory;
-        recalculateCPS(items, newInventory);
+          const baseValue = SCRAP_VALUES[itemDef.rarity.id] || 10;
+
+          let invested = 0;
+          for (let i = 0; i < slot.level; i++) {
+              invested += getUpgradeCost(itemDef, i);
+          }
+
+          const totalValue = baseValue + Math.floor(invested * 0.5);
+
+          setCrumbs(c => c + totalValue);
+
+          const newInventory = prev.filter((_, i) => i !== index);
+
+          inventoryRef.current = newInventory;
+          recalculateCPS(items, newInventory);
+
+          return newInventory;
+      });
     };
+
 
     const upgradeItem = (index) => {
-        const newInventory = [...inventory];
-        const slot = newInventory[index];
-        const itemDef = GAME_ITEMS[slot.id]; 
-        
-        if (slot.level >= 3) return;
-        const cost = getUpgradeCost(itemDef, slot.level);
+      setInventory(prev => {
+          const newInventory = [...prev];
+          const slot = { ...newInventory[index] };
 
-        if (crumbs >= cost) {
-            setCrumbs(prev => prev - cost);
-            slot.level += 1;
-            setInventory(newInventory);
-            inventoryRef.current = newInventory;
-            recalculateCPS(items, newInventory);
-        } else {
-            alert(`Necesitas ${cost} Migajas.`);
-        }
+          if (!slot || slot.level >= 3) return prev;
+
+          const itemDef = GAME_ITEMS[slot.id];
+          const cost = getUpgradeCost(itemDef, slot.level);
+
+          if (crumbs < cost) {
+              alert(`Necesitas ${cost} Migajas.`);
+              return prev;
+          }
+
+          setCrumbs(c => c - cost);
+
+          slot.level += 1;
+          newInventory[index] = slot;
+
+          inventoryRef.current = newInventory;
+          recalculateCPS(items, newInventory);
+
+          return newInventory;
+      });
     };
+
 
     // EVENTOS (Iguales que antes, pero copiados para que esté completo)
     const scheduleNextEvent = () => {
